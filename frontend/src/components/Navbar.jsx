@@ -17,11 +17,27 @@ function Navbar() {
 
   const isActive = (path) => location.pathname === path;
 
+  const navLinkClass = (path) =>
+    `flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200 ${isActive(path)
+      ? "bg-[#722F37]/20 text-[#B11226]"
+      : "text-gray-400 hover:bg-white/5 hover:text-white"
+    }`;
+
+  const mobileNavLinkClass = (path) =>
+    `flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-all duration-200 ${isActive(path)
+      ? "bg-[#722F37]/20 text-[#B11226]"
+      : "text-gray-400 hover:bg-white/5 hover:text-white"
+    }`;
+
+  const closeMobileMenu = () => {
+    setMobileMenu(false);
+  };
+
   return (
     <div className="min-h-screen bg-[#0A0A0A] text-white">
 
       {/* ================= NAVBAR ================= */}
-      <nav className="sticky top-0 z-50 border-b border-white/10 bg-[#0A0A0A]/95 backdrop-blur">
+      <nav className="sticky top-0 z-50 border-b border-white/10 bg-[#0A0A0A]/95 backdrop-blur-xl">
 
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 
@@ -30,57 +46,68 @@ function Navbar() {
             {/* ================= LOGO ================= */}
             <Link
               to="/"
-              className="flex items-center gap-3"
+              onClick={closeMobileMenu}
+              className="group flex items-center gap-3"
             >
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#B11226] shadow-lg shadow-red-900/30">
-                <Sparkles size={21} />
+              {/* Logo */}
+              <div
+                className="
+      flex h-10 w-10 items-center justify-center
+      rounded-xl
+      bg-[#B11226]
+      shadow-lg shadow-[#B11226]/30
+      transition-all duration-300
+      group-hover:bg-[#722F37]
+      group-hover:scale-105
+    "
+              >
+                <Sparkles
+                  size={21}
+                  strokeWidth={2.2}
+                  className="text-white"
+                />
               </div>
 
+              {/* Brand */}
               <div>
-                <h1 className="text-lg font-bold text-white">
-                  AI Content
+                <h1 className="text-lg font-bold tracking-tight text-white">
+                  Lexora{" "}
+                  <span className="text-[#B11226]">
+                    AI
+                  </span>
                 </h1>
 
                 <p className="hidden text-xs text-gray-500 sm:block">
-                  Creation System
+                  AI Content Studio
                 </p>
               </div>
             </Link>
 
             {/* ================= DESKTOP NAVIGATION ================= */}
-            <div className="hidden items-center gap-2 md:flex">
+            <div className="hidden items-center gap-1 md:flex">
 
+              {/* Dashboard */}
               <Link
                 to="/"
-                className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition ${
-                  isActive("/")
-                    ? "bg-[#B11226]/15 text-[#F43F5E]"
-                    : "text-gray-400 hover:bg-white/5 hover:text-white"
-                }`}
+                className={navLinkClass("/")}
               >
                 <LayoutDashboard size={17} />
-                Dashboard
+                Home
               </Link>
 
+              {/* Create */}
               <Link
                 to="/create"
-                className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition ${
-                  isActive("/create")
-                    ? "bg-[#B11226]/15 text-[#F43F5E]"
-                    : "text-gray-400 hover:bg-white/5 hover:text-white"
-                }`}
+                className={navLinkClass("/create")}
               >
                 <Plus size={17} />
                 Create
               </Link>
 
+              {/* History */}
               <Link
                 to="/history"
-                className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition ${
-                  isActive("/history")
-                    ? "bg-[#B11226]/15 text-[#F43F5E]"
-                    : "text-gray-400 hover:bg-white/5 hover:text-white"
-                }`}
+                className={navLinkClass("/history")}
               >
                 <History size={17} />
                 History
@@ -91,20 +118,27 @@ function Navbar() {
             {/* ================= RIGHT SIDE ================= */}
             <div className="hidden items-center gap-3 md:flex">
 
+              {/* Profile */}
               <Link
                 to="/profile"
-                className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition ${
-                  isActive("/profile")
-                    ? "bg-[#B11226]/15 text-[#F43F5E]"
-                    : "text-gray-400 hover:bg-white/5 hover:text-white"
-                }`}
+                className={navLinkClass("/profile")}
               >
                 <User size={18} />
                 Profile
               </Link>
 
+              {/* Logout */}
               <button
-                className="flex items-center gap-2 rounded-lg bg-[#B11226] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#7F0D1B]"
+                type="button"
+                className="
+                  flex items-center gap-2 rounded-lg
+                  bg-[#722F37] px-4 py-2
+                  text-sm font-medium text-white
+                  shadow-md shadow-[#722F37]/20
+                  transition-all duration-200
+                  hover:bg-[#5C1F2B]
+                  hover:shadow-[#722F37]/40
+                "
               >
                 <LogOut size={17} />
                 Logout
@@ -112,10 +146,16 @@ function Navbar() {
 
             </div>
 
-            {/* ================= MOBILE BUTTON ================= */}
+            {/* ================= MOBILE MENU BUTTON ================= */}
             <button
+              type="button"
               onClick={() => setMobileMenu(!mobileMenu)}
-              className="rounded-lg p-2 text-gray-300 hover:bg-white/5 md:hidden"
+              aria-label="Toggle navigation menu"
+              className="
+                rounded-lg p-2 text-gray-300
+                transition hover:bg-white/5 hover:text-white
+                md:hidden
+              "
             >
               {mobileMenu ? (
                 <X size={24} />
@@ -132,60 +172,55 @@ function Navbar() {
 
               <div className="space-y-1">
 
+                {/* Dashboard */}
                 <Link
                   to="/"
-                  onClick={() => setMobileMenu(false)}
-                  className={`flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium ${
-                    isActive("/")
-                      ? "bg-[#B11226]/15 text-[#F43F5E]"
-                      : "text-gray-400 hover:bg-white/5 hover:text-white"
-                  }`}
+                  onClick={closeMobileMenu}
+                  className={mobileNavLinkClass("/")}
                 >
                   <LayoutDashboard size={18} />
-                  Dashboard
+                  Home
                 </Link>
 
+                {/* Create */}
                 <Link
                   to="/create"
-                  onClick={() => setMobileMenu(false)}
-                  className={`flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium ${
-                    isActive("/create")
-                      ? "bg-[#B11226]/15 text-[#F43F5E]"
-                      : "text-gray-400 hover:bg-white/5 hover:text-white"
-                  }`}
+                  onClick={closeMobileMenu}
+                  className={mobileNavLinkClass("/create")}
                 >
                   <Plus size={18} />
-                  Create Content
+                  Create 
                 </Link>
 
+                {/* History */}
                 <Link
                   to="/history"
-                  onClick={() => setMobileMenu(false)}
-                  className={`flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium ${
-                    isActive("/history")
-                      ? "bg-[#B11226]/15 text-[#F43F5E]"
-                      : "text-gray-400 hover:bg-white/5 hover:text-white"
-                  }`}
+                  onClick={closeMobileMenu}
+                  className={mobileNavLinkClass("/history")}
                 >
                   <History size={18} />
                   History
                 </Link>
 
+                {/* Profile */}
                 <Link
                   to="/profile"
-                  onClick={() => setMobileMenu(false)}
-                  className={`flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium ${
-                    isActive("/profile")
-                      ? "bg-[#B11226]/15 text-[#F43F5E]"
-                      : "text-gray-400 hover:bg-white/5 hover:text-white"
-                  }`}
+                  onClick={closeMobileMenu}
+                  className={mobileNavLinkClass("/profile")}
                 >
                   <User size={18} />
                   Profile
                 </Link>
 
+                {/* Logout */}
                 <button
-                  className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium text-red-400 hover:bg-red-950/30"
+                  type="button"
+                  className="
+                    flex w-full items-center gap-3
+                    rounded-lg px-4 py-3
+                    text-sm font-medium text-red-400
+                    transition hover:bg-red-950/30
+                  "
                 >
                   <LogOut size={18} />
                   Logout
@@ -200,7 +235,9 @@ function Navbar() {
       </nav>
 
       {/* ================= PAGE CONTENT ================= */}
-      <Outlet />
+      <main>
+        <Outlet />
+      </main>
 
     </div>
   );
