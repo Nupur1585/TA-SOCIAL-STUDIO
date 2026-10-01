@@ -45,7 +45,7 @@ function Login() {
       );
 
       // Go to Home
-      navigate("/");
+      navigate("/dashboard");
 
     } catch (error) {
       setError(

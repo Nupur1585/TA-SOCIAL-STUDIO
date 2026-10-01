@@ -128,21 +128,19 @@ function Navbar() {
               </Link>
 
               {/* Logout */}
-              <button
-                type="button"
+              <Link
+                to="/login"
                 className="
-                  flex items-center gap-2 rounded-lg
-                  bg-[#722F37] px-4 py-2
-                  text-sm font-medium text-white
-                  shadow-md shadow-[#722F37]/20
-                  transition-all duration-200
-                  hover:bg-[#5C1F2B]
-                  hover:shadow-[#722F37]/40
-                "
+    flex items-center gap-2 rounded-lg
+    bg-[#722F37] px-4 py-2
+    text-sm font-medium text-white
+    shadow-md shadow-[#722F37]/20
+    transition-all duration-200
+    hover:bg-[#5C1F2B]
+  "
               >
-                <LogOut size={17} />
-                Logout
-              </button>
+                Login
+              </Link>
 
             </div>
 
@@ -189,7 +187,7 @@ function Navbar() {
                   className={mobileNavLinkClass("/create")}
                 >
                   <Plus size={18} />
-                  Create 
+                  Create
                 </Link>
 
                 {/* History */}
