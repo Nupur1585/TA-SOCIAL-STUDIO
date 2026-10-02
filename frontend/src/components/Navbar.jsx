@@ -118,16 +118,7 @@ function Navbar() {
             {/* ================= RIGHT SIDE ================= */}
             <div className="hidden items-center gap-3 md:flex">
 
-              {/* Profile */}
-              <Link
-                to="/profile"
-                className={navLinkClass("/profile")}
-              >
-                <User size={18} />
-                Profile
-              </Link>
-
-              {/* Logout */}
+              {/* Login */}
               <Link
                 to="/login"
                 className="
@@ -140,6 +131,20 @@ function Navbar() {
   "
               >
                 Login
+              </Link>
+
+              <Link
+                to="/register"
+                className="
+    flex items-center gap-2 rounded-lg
+    bg-[#722F37] px-4 py-2
+    text-sm font-medium text-white
+    shadow-md shadow-[#722F37]/20
+    transition-all duration-200
+    hover:bg-[#5C1F2B]
+  "
+              >
+                SignUp
               </Link>
 
             </div>
