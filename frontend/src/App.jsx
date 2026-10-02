@@ -27,12 +27,12 @@ function App() {
 
         {/* Protected Pages */}
         <Route element={<ProtectedRoute />}>
-          <Route element={<Navbar />}>
+          {/* <Route element={<Navbar />}> */}
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/create" element={<Create />} />
             <Route path="/history" element={<History />} />
             <Route path="/profile" element={<Profile />} />
-          </Route>
+          {/* </Route> */}
         </Route>
 
       </Routes>
