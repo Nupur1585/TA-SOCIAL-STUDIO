@@ -4,20 +4,20 @@ services:
 
   mongodb:
     image: mongo:7
-    container_name: ai-content-mongodb
+    container_name: ta-social-studio-mongodb
     restart: always
     ports:
       - "27017:27017"
     environment:
       MONGO_INITDB_ROOT_USERNAME: admin
       MONGO_INITDB_ROOT_PASSWORD: password
-      MONGO_INITDB_DATABASE: ai_content_creation
+      MONGO_INITDB_DATABASE: ta_social_studio
     volumes:
       - mongo_data:/data/db
 
   mongo-express:
     image: mongo-express:latest
-    container_name: ai-content-mongo-express
+    container_name: ta-social-studio-mongo-express
     restart: always
     ports:
       - "8081:8081"
