@@ -1,65 +1,38 @@
-// import express from "express";
-// import cors from "cors";
-// import dotenv from "dotenv";
-
-// dotenv.config();
-
-// const app = express();
-
-// const PORT = process.env.PORT || 5000;
-
-// app.use(
-//   cors({
-//     origin: "http://localhost:5173",
-//     credentials: true,
-//   })
-// );
-
-// app.use(express.json());
-
-// app.get("/api/health", (_req, res) => {
-//   res.json({
-//     success: true,
-//     message: "TA Social Studio Backend Connected",
-//     timestamp: new Date().toISOString(),
-//   });
-// });
-
-// app.get("/", (_req, res) => {
-//   res.json({
-//     message: "TA Social Studio API is running",
-//   });
-// });
-
-// app.listen(PORT, () => {
-//   console.log(`🚀 Backend running on http://localhost:${PORT}`);
-// });
-
-import express from "express";
+import cookieParser from "cookie-parser";
 import cors from "cors";
-import dotenv from "dotenv";
+import express, {
+  type NextFunction,
+  type Request,
+  type Response,
+} from "express";
+import helmet from "helmet";
 import connectDB from "./config/db.js";
+import { frontendOrigin, getJwtSecret } from "./config/env.js";
+import { requireAdmin, requireAuth } from "./middleware/authMiddleware.js";
+import authRoutes from "./routes/authRoutes.js";
 
-dotenv.config();
+// Fail fast if the signing secret is missing or weak.
+getJwtSecret();
 
 const app = express();
 
 const PORT = process.env.PORT || 5000;
 
 // Middleware
+app.use(helmet());
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: frontendOrigin(),
     credentials: true,
   })
 );
-
-app.use(express.json());
+app.use(express.json({ limit: "1mb" }));
+app.use(cookieParser());
 
 // Connect MongoDB
 connectDB();
 
-// Health check
+// Health check (public)
 app.get("/api/health", (_req, res) => {
   res.json({
     success: true,
@@ -75,7 +48,22 @@ app.get("/", (_req, res) => {
   });
 });
 
+// Auth (login is public; me/logout are guarded inside the router)
+app.use("/api/auth", authRoutes);
+
+// Every other API route must be mounted under here so it is admin-only by default.
+app.use("/api/admin", requireAuth, requireAdmin);
+
+// Unknown routes and errors: JSON, no stack traces.
+app.use((_req, res) => {
+  res.status(404).json({ success: false, message: "Not found" });
+});
+app.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {
+  console.error(error);
+  res.status(500).json({ success: false, message: "Something went wrong" });
+});
+
 // Start server
 app.listen(PORT, () => {
-  console.log(`🚀 Backend running on http://localhost:${PORT}`);
+  console.log(`Backend running on http://localhost:${PORT}`);
 });

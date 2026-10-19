@@ -1,7 +1,15 @@
 import { useEffect, useRef, useState } from "react";
-import { Bell, Check, ChevronDown, Menu, Search, UserCircle2 } from "lucide-react";
+import {
+  Bell,
+  Check,
+  ChevronDown,
+  LogOut,
+  Menu,
+  Search,
+  UserCircle2,
+} from "lucide-react";
+import { useAuth } from "../../context/AuthContext";
 import { useBrands } from "../../context/BrandsContext";
-import { sampleAdmin } from "../../data/sampleData";
 import api from "../../services/api";
 import { BrandLogo } from "../ui/BrandLogo";
 
@@ -25,6 +33,9 @@ export function TopBar({ onMenu }: { onMenu: () => void }) {
   const [backend, setBackend] = useState<BackendState>("connecting");
   const [query, setQuery] = useState("");
   const brandRef = useOutsideClose(() => setBrandOpen(false));
+  const { user, logout } = useAuth();
+  const [userOpen, setUserOpen] = useState(false);
+  const userRef = useOutsideClose(() => setUserOpen(false));
 
   const selected = brands.find((b) => b.id === selectedBrandId) ?? brands[0];
 
@@ -140,16 +151,38 @@ export function TopBar({ onMenu }: { onMenu: () => void }) {
           </span>
         </button>
 
-        <button
-          type="button"
-          className="flex items-center gap-2 rounded-lg p-1 hover:bg-slate-50"
-        >
-          <UserCircle2 size={34} className="text-slate-400" strokeWidth={1.4} />
-          <span className="hidden text-sm font-medium text-slate-800 sm:inline">
-            {sampleAdmin.name}
-          </span>
-          <ChevronDown size={16} className="hidden text-slate-500 sm:block" />
-        </button>
+        <div className="relative" ref={userRef}>
+          <button
+            type="button"
+            onClick={() => setUserOpen((v) => !v)}
+            aria-expanded={userOpen}
+            className="flex items-center gap-2 rounded-lg p-1 hover:bg-slate-50"
+          >
+            <UserCircle2 size={34} className="text-slate-400" strokeWidth={1.4} />
+            <span className="hidden text-sm font-medium text-slate-800 sm:inline">
+              Admin
+            </span>
+            <ChevronDown size={16} className="hidden text-slate-500 sm:block" />
+          </button>
+          {userOpen && (
+            <div className="absolute right-0 mt-2 w-60 rounded-lg border border-slate-200 bg-white p-1 shadow-lg">
+              <div className="border-b border-slate-100 px-3 py-2">
+                <p className="text-xs text-slate-500">Signed in as</p>
+                <p className="truncate text-sm font-medium text-slate-800">
+                  {user?.email}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => void logout()}
+                className="mt-1 flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+              >
+                <LogOut size={16} />
+                Sign out
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </header>
   );
