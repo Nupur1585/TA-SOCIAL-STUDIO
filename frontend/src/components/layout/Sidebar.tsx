@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { NavLink, useLocation } from "react-router-dom";
+import { Link, NavLink, useLocation } from "react-router-dom";
 import {
   BarChart3,
   Building2,
@@ -43,7 +43,7 @@ export function Sidebar({
   open: boolean;
   onClose: () => void;
 }) {
-  const { pathname } = useLocation();
+  const { pathname, search } = useLocation();
   const contentActive = pathname.startsWith("/content");
   const [contentOpen, setContentOpen] = useState(contentActive);
 
@@ -107,25 +107,32 @@ export function Sidebar({
             {contentOpen && (
               <div className="ml-5 mt-1 space-y-1 border-l border-white/10 pl-3">
                 {[
-                  { to: "/content", label: "All Content", end: true },
-                  { to: "/content/new", label: "Create Content", end: true },
-                ].map((s) => (
-                  <NavLink
-                    key={s.to}
-                    to={s.to}
-                    end={s.end}
-                    onClick={onClose}
-                    className={({ isActive }) =>
-                      `block rounded-md px-3 py-2 text-sm transition-colors ${
+                  { to: "/content", label: "All Content" },
+                  { to: "/content/new", label: "Create Content" },
+                  { to: "/content?status=Pending%20Approval", label: "Approvals" },
+                ].map((s) => {
+                  const [path, query] = s.to.split("?");
+                  const isActive =
+                    pathname === path &&
+                    (query ? search.includes("status=Pending") : !search.includes("status=Pending"));
+                  return (
+                    <Link
+                      key={s.to}
+                      to={s.to}
+                      onClick={onClose}
+                      className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors ${
                         isActive
-                          ? "text-white"
+                          ? "bg-white/5 font-medium text-white"
                           : "text-slate-400 hover:text-white"
-                      }`
-                    }
-                  >
-                    {s.label}
-                  </NavLink>
-                ))}
+                      }`}
+                    >
+                      <span
+                        className={`h-1.5 w-1.5 rounded-full ${isActive ? "bg-blue-500" : "bg-slate-500"}`}
+                      />
+                      {s.label}
+                    </Link>
+                  );
+                })}
               </div>
             )}
           </div>

@@ -4,8 +4,11 @@ import { AppLayout } from "./components/layout/AppLayout";
 import { AuthProvider } from "./context/AuthContext";
 import { BrandsProvider } from "./context/BrandsContext";
 import Brands from "./pages/Brands";
+import Content from "./pages/Content";
+import ContentForm from "./pages/ContentForm";
 import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
+import MediaLibrary from "./pages/MediaLibrary";
 import Placeholder from "./pages/Placeholder";
 
 function App() {
@@ -25,9 +28,10 @@ function App() {
                 path="brands/:brandId/guidelines"
                 element={<Placeholder />}
               />
-              <Route path="content" element={<Placeholder />} />
-              <Route path="content/new" element={<Placeholder />} />
-              <Route path="media" element={<Placeholder />} />
+              <Route path="content" element={<Content />} />
+              <Route path="content/new" element={<ContentForm />} />
+              <Route path="content/:id/edit" element={<ContentForm />} />
+              <Route path="media" element={<MediaLibrary />} />
               <Route path="calendar" element={<Placeholder />} />
               <Route path="analytics" element={<Placeholder />} />
               <Route path="reports" element={<Placeholder />} />

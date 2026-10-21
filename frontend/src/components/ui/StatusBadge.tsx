@@ -4,6 +4,7 @@ const tones = {
   orange: "bg-orange-50 text-orange-500",
   red: "bg-red-50 text-red-500",
   gray: "bg-slate-100 text-slate-500",
+  purple: "bg-violet-50 text-violet-600",
 } as const;
 
 export type BadgeTone = keyof typeof tones;
@@ -14,6 +15,12 @@ const statusTone: Record<string, BadgeTone> = {
   Scheduled: "blue",
   Pending: "orange",
   Inactive: "gray",
+  // Content workflow statuses
+  Draft: "gray",
+  "Pending Approval": "orange",
+  Approved: "green",
+  Published: "purple",
+  Rejected: "red",
 };
 
 export function StatusBadge({

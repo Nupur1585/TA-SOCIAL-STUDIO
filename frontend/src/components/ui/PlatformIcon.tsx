@@ -62,9 +62,9 @@ export function PlatformIcon({
   size = "md",
 }: {
   platform: PlatformKey;
-  size?: "sm" | "md" | "lg";
+  size?: "xs" | "sm" | "md" | "lg";
 }) {
-  const dims = { sm: "h-6 w-6", md: "h-8 w-8", lg: "h-9 w-9" }[size];
+  const dims = { xs: "h-5 w-5", sm: "h-6 w-6", md: "h-8 w-8", lg: "h-9 w-9" }[size];
   const { bg, label } = config[platform];
   return (
     <span

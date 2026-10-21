@@ -46,3 +46,51 @@ export interface ActivityItem {
   description: string;
   time: string;
 }
+
+export type MediaKind = "Image" | "Video" | "Reel" | "Short" | "Carousel";
+
+export interface MediaItem {
+  id: string;
+  title: string;
+  kind: MediaKind;
+  brandId: string;
+  platforms: PlatformKey[];
+  /** ISO date string. */
+  createdAt: string;
+  /** Seconds, videos only. */
+  duration: number | null;
+  mimeType: string;
+  size: number;
+  /** True for items from data/demoMedia.ts: they have no file behind them. */
+  demo?: boolean;
+  thumbClass?: string;
+}
+
+export type ContentType = "Image" | "Reel" | "Carousel" | "Video" | "Short" | "Text";
+
+export type ContentWorkflowStatus =
+  | "Draft"
+  | "Pending Approval"
+  | "Approved"
+  | "Scheduled"
+  | "Published"
+  | "Rejected";
+
+export interface ContentItem {
+  id: string;
+  title: string;
+  caption: string;
+  hashtags: string[];
+  brandId: string;
+  platforms: PlatformKey[];
+  type: ContentType;
+  status: ContentWorkflowStatus;
+  scheduledAt: string | null;
+  createdAt: string;
+  mediaIds: string[];
+  /** True for items from data/demoContent.ts: they exist only in the browser. */
+  demo?: boolean;
+  thumbClass?: string;
+  /** Video length in seconds, shown on demo video cards. */
+  duration?: number | null;
+}

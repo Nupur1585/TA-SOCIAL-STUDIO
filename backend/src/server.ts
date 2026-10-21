@@ -10,6 +10,8 @@ import connectDB from "./config/db.js";
 import { frontendOrigin, getJwtSecret } from "./config/env.js";
 import { requireAdmin, requireAuth } from "./middleware/authMiddleware.js";
 import authRoutes from "./routes/authRoutes.js";
+import contentRoutes from "./routes/contentRoutes.js";
+import mediaRoutes from "./routes/mediaRoutes.js";
 
 // Fail fast if the signing secret is missing or weak.
 getJwtSecret();
@@ -53,6 +55,8 @@ app.use("/api/auth", authRoutes);
 
 // Every other API route must be mounted under here so it is admin-only by default.
 app.use("/api/admin", requireAuth, requireAdmin);
+app.use("/api/admin/media", mediaRoutes);
+app.use("/api/admin/content", contentRoutes);
 
 // Unknown routes and errors: JSON, no stack traces.
 app.use((_req, res) => {
