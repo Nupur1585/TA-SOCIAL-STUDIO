@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import { z } from "zod";
 import Content, { CONTENT_STATUSES, CONTENT_TYPES } from "../models/Content.js";
 import Media, { PLATFORMS } from "../models/Media.js";
+import { audit } from "../utils/audit.js";
 import { brandIdSchema, escapeRegex } from "./mediaController.js";
 
 const hashtag = z
@@ -30,7 +31,10 @@ const listSchema = z.object({
   status: z.enum(CONTENT_STATUSES).optional(),
   type: z.enum(CONTENT_TYPES).optional(),
   page: z.coerce.number().int().min(1).default(1),
-  limit: z.coerce.number().int().min(1).max(100).default(8),
+  // Range on scheduledAt, used by the calendar.
+  from: z.iso.datetime({ offset: true }).optional(),
+  to: z.iso.datetime({ offset: true }).optional(),
+  limit: z.coerce.number().int().min(1).max(200).default(8),
 });
 
 /** Allowed manual status changes. "Published" is intentionally unreachable: nothing publishes yet. */
@@ -84,7 +88,7 @@ async function load(req: Request, res: Response) {
 export async function listContent(req: Request, res: Response) {
   const parsed = listSchema.safeParse(req.query);
   if (!parsed.success) return bad(res, "Invalid filters");
-  const { q, brandId, platform, status, type, page, limit } = parsed.data;
+  const { q, brandId, platform, status, type, page, limit, from, to } = parsed.data;
 
   const base: Record<string, unknown> = {};
   if (q) {
@@ -94,6 +98,9 @@ export async function listContent(req: Request, res: Response) {
   if (brandId) base["brandId"] = brandId;
   if (platform) base["platforms"] = platform;
   if (type) base["type"] = type;
+  if (from || to) {
+    base["scheduledAt"] = { ...(from ? { $gte: new Date(from) } : {}), ...(to ? { $lte: new Date(to) } : {}) };
+  }
   const filter = status ? { ...base, status } : base;
 
   const [items, total, counts] = await Promise.all([
@@ -129,6 +136,7 @@ export async function createContent(req: Request, res: Response) {
     status: "Draft",
     createdBy: new mongoose.Types.ObjectId(req.user!.id),
   });
+  await audit(req, { action: "Created content", category: "Content", resource: doc.title, resourceId: String(doc._id) });
   res.status(201).json({ success: true, data: serialize(doc) });
 }
 
@@ -149,6 +157,7 @@ export async function updateContent(req: Request, res: Response) {
   if (mediaIds) doc.set("mediaIds", mediaIds);
   if (scheduledAt !== undefined) doc.set("scheduledAt", scheduledAt ? new Date(scheduledAt) : undefined);
   await doc.save();
+  await audit(req, { action: "Updated content", category: "Content", resource: doc.title, resourceId: String(doc._id) });
   res.json({ success: true, data: serialize(doc) });
 }
 
@@ -165,6 +174,7 @@ export async function changeStatus(req: Request, res: Response) {
   const { status, scheduledAt } = parsed.data;
 
   if (!TRANSITIONS[doc.status]?.includes(status)) {
+    await audit(req, { action: `Status change to ${status}`, category: "Content", result: "Failed", resource: doc.title, resourceId: String(doc._id), metadata: { from: doc.status } });
     return res.status(409).json({ success: false, message: `Cannot move ${doc.status} content to ${status}` });
   }
   if (status === "Pending Approval" && doc.mediaIds.length === 0 && doc.type !== "Text") {
@@ -175,8 +185,16 @@ export async function changeStatus(req: Request, res: Response) {
     if (!when || when.getTime() <= Date.now()) return bad(res, "Choose a future date and time to schedule");
     doc.set("scheduledAt", when);
   }
+  const previous = doc.status;
   doc.set("status", status);
   await doc.save();
+  await audit(req, {
+    action: status === "Scheduled" ? "Scheduled content" : `Status change to ${status}`,
+    category: status === "Scheduled" ? "Scheduling" : "Content",
+    resource: doc.title,
+    resourceId: String(doc._id),
+    metadata: { from: previous, to: status },
+  });
   res.json({ success: true, data: serialize(doc) });
 }
 
@@ -194,6 +212,7 @@ export async function duplicateContent(req: Request, res: Response) {
     status: "Draft",
     createdBy: new mongoose.Types.ObjectId(req.user!.id),
   });
+  await audit(req, { action: "Duplicated content", category: "Content", resource: doc.title, resourceId: String(copy._id) });
   res.status(201).json({ success: true, data: serialize(copy) });
 }
 
@@ -201,5 +220,6 @@ export async function deleteContent(req: Request, res: Response) {
   const doc = await load(req, res);
   if (!doc) return;
   await doc.deleteOne();
+  await audit(req, { action: "Deleted content", category: "Content", resource: doc.title, resourceId: String(doc._id) });
   res.json({ success: true });
 }

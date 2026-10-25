@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 import type { NextFunction, Request, Response } from "express";
 import { z } from "zod";
 import User from "../models/User.js";
+import { audit } from "../utils/audit.js";
 import {
   AUTH_COOKIE,
   authCookieOptions,
@@ -38,12 +39,15 @@ export async function login(req: Request, res: Response, next: NextFunction) {
     );
 
     if (!user || !passwordOk || !user.isActive || user.role !== "admin") {
+      await audit(req, { action: "Failed login attempt", category: "Authentication", result: "Failed", actorEmail: email });
       return res.status(401).json(INVALID);
     }
 
     user.lastLoginAt = new Date();
     await user.save();
 
+    req.user = { id: String(user._id), email: user.email, role: user.role };
+    await audit(req, { action: "Logged in", category: "Authentication" });
     const token = signAuthToken(String(user._id), user.tokenVersion, remember);
     res.cookie(AUTH_COOKIE, token, authCookieOptions(remember));
 
@@ -64,6 +68,7 @@ export async function logout(req: Request, res: Response, next: NextFunction) {
   try {
     // Bump the token version so the old token is rejected even if it was copied.
     if (req.user) {
+      await audit(req, { action: "Logged out", category: "Authentication" });
       await User.updateOne({ _id: req.user.id }, { $inc: { tokenVersion: 1 } });
     }
     res.clearCookie(AUTH_COOKIE, clearCookieOptions());

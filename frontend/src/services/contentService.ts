@@ -7,6 +7,9 @@ export interface ContentQuery {
   platform?: PlatformKey;
   status?: ContentWorkflowStatus;
   type?: ContentType;
+  /** ISO range on scheduledAt (calendar). */
+  from?: string;
+  to?: string;
   page?: number;
   limit?: number;
 }

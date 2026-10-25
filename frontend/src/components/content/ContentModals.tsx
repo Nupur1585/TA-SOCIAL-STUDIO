@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useBrands } from "../../context/BrandsContext";
 import { formatDateTime, toLocalInput } from "../../lib/format";
 import type { ContentItem } from "../../types";
@@ -8,7 +8,15 @@ import { PlatformIcon } from "../ui/PlatformIcon";
 import { StatusBadge } from "../ui/StatusBadge";
 import { ContentThumb, TypeBadge } from "./ContentCard";
 
-export function ContentDetailsModal({ item, onClose }: { item: ContentItem; onClose: () => void }) {
+export function ContentDetailsModal({
+  item,
+  onClose,
+  footer,
+}: {
+  item: ContentItem;
+  onClose: () => void;
+  footer?: ReactNode;
+}) {
   const { brands } = useBrands();
   const brand = brands.find((b) => b.id === item.brandId)?.name ?? "Unknown brand";
   return (
@@ -57,6 +65,7 @@ export function ContentDetailsModal({ item, onClose }: { item: ContentItem; onCl
           </div>
         </dl>
       </div>
+      {footer && <div className="mt-5 flex justify-end gap-2 border-t border-slate-100 pt-4">{footer}</div>}
     </Modal>
   );
 }

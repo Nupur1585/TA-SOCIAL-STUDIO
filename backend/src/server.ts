@@ -9,9 +9,11 @@ import helmet from "helmet";
 import connectDB from "./config/db.js";
 import { frontendOrigin, getJwtSecret } from "./config/env.js";
 import { requireAdmin, requireAuth } from "./middleware/authMiddleware.js";
+import auditRoutes from "./routes/auditRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import contentRoutes from "./routes/contentRoutes.js";
 import mediaRoutes from "./routes/mediaRoutes.js";
+import reportRoutes from "./routes/reportRoutes.js";
 
 // Fail fast if the signing secret is missing or weak.
 getJwtSecret();
@@ -57,6 +59,8 @@ app.use("/api/auth", authRoutes);
 app.use("/api/admin", requireAuth, requireAdmin);
 app.use("/api/admin/media", mediaRoutes);
 app.use("/api/admin/content", contentRoutes);
+app.use("/api/admin/reports", reportRoutes);
+app.use("/api/admin/audit", auditRoutes);
 
 // Unknown routes and errors: JSON, no stack traces.
 app.use((_req, res) => {

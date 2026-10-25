@@ -10,6 +10,7 @@ import {
 } from "../middleware/upload.js";
 import Content from "../models/Content.js";
 import Media, { MEDIA_KINDS, PLATFORMS } from "../models/Media.js";
+import { audit } from "../utils/audit.js";
 
 const BRAND_RE = /^[A-Za-z0-9_-]{1,64}$/;
 export const brandIdSchema = z.string().regex(BRAND_RE, "Invalid brand");
@@ -112,6 +113,7 @@ export async function uploadMedia(req: Request, res: Response) {
   }
   const reject = (message: string) => {
     removeFile(file.filename);
+    void audit(req, { action: "Uploaded media", category: "Media", result: "Failed", resource: file.originalname.slice(0, 120), metadata: { reason: message } });
     return res.status(400).json({ success: false, message });
   };
 
@@ -149,6 +151,7 @@ export async function uploadMedia(req: Request, res: Response) {
     throw error;
   }
 
+  await audit(req, { action: "Uploaded media", category: "Media", resource: media.title, resourceId: String(media._id), metadata: { kind: media.kind } });
   res.status(201).json({ success: true, data: serialize(media) });
 }
 
@@ -208,5 +211,6 @@ export async function deleteMedia(req: Request, res: Response) {
   await Content.updateMany({ mediaIds: media._id }, { $pull: { mediaIds: media._id } });
   await media.deleteOne();
   removeFile(media.filename);
+  await audit(req, { action: "Deleted media", category: "Media", resource: media.title, resourceId: String(media._id) });
   res.json({ success: true });
 }
