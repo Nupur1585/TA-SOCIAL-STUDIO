@@ -17,15 +17,22 @@ import {
 import { CalendarDays, ChevronLeft, ChevronRight, Loader2, Plus } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { ContentThumb } from "../components/content/ContentCard";
-import { ContentDetailsModal } from "../components/content/ContentModals";
+import { ContentDetailsModal, ScheduleModal } from "../components/content/ContentModals";
 import { Notice, SearchInput, SelectField } from "../components/ui/ListControls";
 import { PageHeader, primaryButton } from "../components/ui/PageHeader";
 import { PlatformIcon } from "../components/ui/PlatformIcon";
 import { StatusBadge } from "../components/ui/StatusBadge";
 import { useBrands } from "../context/BrandsContext";
-import { demoContent } from "../data/demoContent";
+import { buildDemoContent } from "../data/demoContent";
 import { useDebounced } from "../lib/useDebounced";
-import { listContent, type ContentQuery } from "../services/contentService";
+import {
+  apiFullMessage,
+  changeContentStatus,
+  listContent,
+  publishContentNow,
+  rescheduleContent,
+  type ContentQuery,
+} from "../services/contentService";
 import { apiErrorMessage } from "../services/mediaService";
 import type { ContentItem, ContentWorkflowStatus, PlatformKey } from "../types";
 
@@ -38,9 +45,12 @@ const chipTone: Record<ContentWorkflowStatus, string> = {
   Draft: "bg-slate-100 text-slate-700 border-slate-200",
   Rejected: "bg-red-50 text-red-800 border-red-200",
   Published: "bg-violet-50 text-violet-800 border-violet-200",
+  Publishing: "bg-sky-50 text-sky-800 border-sky-200",
+  Failed: "bg-red-50 text-red-800 border-red-300",
+  Cancelled: "bg-slate-50 text-slate-500 border-slate-200 line-through",
 };
 
-const STATUSES: ContentWorkflowStatus[] = ["Draft", "Pending Approval", "Approved", "Scheduled", "Published", "Rejected"];
+const STATUSES: ContentWorkflowStatus[] = ["Draft", "Pending Approval", "Approved", "Scheduled", "Publishing", "Published", "Failed", "Cancelled", "Rejected"];
 const dayKey = (d: Date) => format(d, "yyyy-MM-dd");
 const when = (c: ContentItem) => new Date(c.scheduledAt as string);
 
@@ -124,6 +134,7 @@ export default function Calendar() {
 
   const demoMode = libraryEmpty === true;
 
+  const demoContent = useMemo(() => buildDemoContent(brands.map((b) => b.id)), [brands]);
   const demoFiltered = useMemo(() => {
     const ql = (filters.q ?? "").toLowerCase();
     return demoContent.filter(
@@ -133,7 +144,7 @@ export default function Calendar() {
         (!filters.platform || c.platforms.includes(filters.platform)) &&
         (!filters.status || c.status === filters.status),
     );
-  }, [filters]);
+  }, [filters, demoContent]);
 
   useEffect(() => {
     if (libraryEmpty === null || demoMode) return;
@@ -186,7 +197,33 @@ export default function Calendar() {
 
   const days = eachDayOfInterval(range);
   const today = new Date();
-  const editable = (c: ContentItem) => !c.demo && (c.status === "Draft" || c.status === "Rejected");
+  const editable = (c: ContentItem) => !c.demo && ["Draft", "Rejected", "Failed", "Cancelled", "Scheduled"].includes(c.status);
+
+  const [rescheduling, setRescheduling] = useState<ContentItem | null>(null);
+  const [working, setWorking] = useState(false);
+  const [notice, setNotice] = useState<{ tone: "success" | "error"; text: string } | null>(null);
+  const act = async (work: () => Promise<unknown>, success: string) => {
+    setWorking(true);
+    try {
+      await work();
+      setNotice({ tone: "success", text: success });
+      setDetails(null);
+      setRescheduling(null);
+      setReload((n) => n + 1);
+    } catch (e) {
+      setNotice({ tone: "error", text: apiFullMessage(e, "That action failed.") });
+    } finally {
+      setWorking(false);
+    }
+  };
+
+  // Refresh while something is publishing so the result shows up without a manual reload.
+  const anyPublishing = items.some((i) => i.status === "Publishing");
+  useEffect(() => {
+    if (!anyPublishing) return;
+    const t = setInterval(() => setReload((n) => n + 1), 4000);
+    return () => clearInterval(t);
+  }, [anyPublishing]);
 
   const btn = "h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 hover:bg-slate-50";
 
@@ -258,6 +295,11 @@ export default function Calendar() {
       {demoMode && (
         <Notice tone="info">
           <strong>Demonstration data.</strong> No content has been scheduled yet, so sample items are shown. Use Schedule Content to add real posts.
+        </Notice>
+      )}
+      {notice && (
+        <Notice tone={notice.tone} onClose={() => setNotice(null)}>
+          {notice.text}
         </Notice>
       )}
       {error && (
@@ -396,19 +438,53 @@ export default function Calendar() {
         </aside>
       </div>
 
+      {rescheduling && (
+        <ScheduleModal
+          item={rescheduling}
+          busy={working}
+          onClose={() => setRescheduling(null)}
+          onSubmit={(iso) => void act(() => rescheduleContent(rescheduling.id, iso), "Post rescheduled.")}
+        />
+      )}
       {details && (
         <ContentDetailsModal
           item={details}
           onClose={() => setDetails(null)}
           footer={
-            editable(details) ? (
-              <Link to={`/content/${details.id}/edit`} className={primaryButton}>
-                Edit content
-              </Link>
-            ) : (
-              <Link to="/content" className="text-sm font-medium text-blue-600 hover:underline">
-                Manage in Content
-              </Link>
+            details.demo ? undefined : (
+              <>
+                {details.status === "Scheduled" && (
+                  <>
+                    <button type="button" disabled={working} onClick={() => setRescheduling(details)} className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60">
+                      Reschedule
+                    </button>
+                    <button type="button" disabled={working} onClick={() => void act(() => changeContentStatus(details.id, "Cancelled"), "Scheduling cancelled.")} className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60">
+                      Cancel scheduling
+                    </button>
+                  </>
+                )}
+                {["Draft", "Approved", "Scheduled", "Failed", "Cancelled"].includes(details.status) && (
+                  <button
+                    type="button"
+                    disabled={working}
+                    onClick={() => {
+                      if (window.confirm(`Publish "${details.title}" now?`)) void act(() => publishContentNow(details.id), "Publishing started. Status updates automatically.");
+                    }}
+                    className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+                  >
+                    {details.status === "Failed" ? "Retry now" : "Publish now"}
+                  </button>
+                )}
+                {editable(details) ? (
+                  <Link to={`/content/${details.id}/edit`} className={primaryButton}>
+                    Edit content
+                  </Link>
+                ) : (
+                  <Link to="/content" className="text-sm font-medium text-blue-600 hover:underline">
+                    Manage in Content
+                  </Link>
+                )}
+              </>
             )
           }
         />

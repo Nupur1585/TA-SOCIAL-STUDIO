@@ -107,7 +107,7 @@ export function TopBar({ onMenu }: { onMenu: () => void }) {
                 {selected?.name ?? "No brand"}
               </span>
               <span className="block text-[11px] text-slate-500">
-                {selected?.platforms.length ?? 0} connected platforms
+                {selected?.connectedAccounts ?? 0} connected accounts
               </span>
             </span>
             <ChevronDown size={16} className="text-slate-500" />

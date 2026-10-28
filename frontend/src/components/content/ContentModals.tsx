@@ -26,6 +26,30 @@ export function ContentDetailsModal({
           <ContentThumb item={item} className="aspect-video w-full rounded-lg" />
           <p className="whitespace-pre-wrap text-sm text-slate-700">{item.caption || "No caption"}</p>
           <p className="text-sm text-blue-600">{item.hashtags.join(" ")}</p>
+          {item.targets.length > 0 && (
+            <div>
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">Publishing</h3>
+              <ul className="mt-2 divide-y divide-slate-100 rounded-lg border border-slate-200">
+                {item.targets.map((t) => (
+                  <li key={t.id} className="flex flex-wrap items-center gap-3 px-3 py-2.5 text-sm">
+                    <PlatformIcon platform={t.platform} size="sm" />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate font-medium text-slate-800">{t.accountName}</span>
+                      {t.status === "Published" && t.publishedAt && <span className="block text-xs text-slate-500">Published {formatDateTime(t.publishedAt)}</span>}
+                      {t.status !== "Published" && t.lastAttemptAt && <span className="block text-xs text-slate-500">Last attempt {formatDateTime(t.lastAttemptAt)} · {t.attempts} attempt{t.attempts === 1 ? "" : "s"}</span>}
+                      {t.error && <span className="block text-xs text-red-600">{t.error}</span>}
+                    </span>
+                    {t.publishedUrl && (
+                      <a href={t.publishedUrl} target="_blank" rel="noopener noreferrer" className="text-xs font-medium text-blue-600 hover:underline">
+                        View post
+                      </a>
+                    )}
+                    <StatusBadge status={t.status} tone={t.status === "Published" ? "green" : t.status === "Failed" ? "red" : t.status === "Publishing" ? "blue" : "gray"} />
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
           {item.demo && (
             <Notice tone="info">Demonstration item. Create content to manage real posts.</Notice>
           )}

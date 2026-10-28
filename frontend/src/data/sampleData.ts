@@ -6,49 +6,9 @@
  */
 import type {
   ActivityItem,
-  Brand,
   PlatformKey,
   UpcomingContentItem,
 } from "../types";
-
-export const sampleBrands: Brand[] = [
-  {
-    id: "brd-001",
-    brandId: "BRD-001",
-    name: "Tech Amdavad",
-    initials: "TA",
-    tagline: "Technology · Innovation · Growth",
-    description:
-      "Tech Amdavad is a technology and digital solutions brand focused on innovation and growth.",
-    timezone: "Asia/Kolkata (IST)",
-    assignedUsers: 2,
-    hashtags: ["#TechAmdavad", "#Innovation", "#Digital"],
-    platforms: ["instagram", "facebook", "youtube", "linkedin", "x"],
-    status: "Active",
-    assetCount: 5,
-    guidelinesUpdated: "2 days ago",
-    bannerClass: "from-slate-700 via-slate-500 to-sky-300",
-    logoClass: "from-indigo-700 to-violet-600",
-  },
-  {
-    id: "brd-002",
-    brandId: "BRD-002",
-    name: "Nirvikalp Yoga Academy",
-    initials: "NY",
-    tagline: "Mind · Body · Balance",
-    description:
-      "Nirvikalp Yoga Academy offers transformative yoga and wellness programs for a healthier life.",
-    timezone: "Asia/Kolkata (IST)",
-    assignedUsers: 1,
-    hashtags: ["#Yoga", "#Wellness", "#Nirvikalp"],
-    platforms: ["instagram", "facebook", "youtube", "linkedin"],
-    status: "Active",
-    assetCount: 3,
-    guidelinesUpdated: "5 days ago",
-    bannerClass: "from-orange-300 via-rose-200 to-amber-100",
-    logoClass: "from-teal-500 to-emerald-400",
-  },
-];
 
 export const contentOverviewData = [
   { date: "Sep 25", posts: 14, reels: 8, stories: 4, others: 3 },

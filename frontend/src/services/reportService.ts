@@ -1,7 +1,7 @@
 import api from "./api";
 import type { PlatformKey } from "../types";
 
-export type ReportType = "Content Summary" | "Schedule Overview" | "Media Inventory";
+export type ReportType = "Content Summary" | "Schedule Overview" | "Media Inventory" | "Publishing History";
 export type ReportFormat = "PDF" | "CSV";
 export type ReportStatus = "Ready" | "Processing" | "Scheduled" | "Failed";
 

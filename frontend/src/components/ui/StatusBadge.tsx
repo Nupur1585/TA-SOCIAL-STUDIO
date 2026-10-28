@@ -20,6 +20,9 @@ const statusTone: Record<string, BadgeTone> = {
   "Pending Approval": "orange",
   Approved: "green",
   Published: "purple",
+  Publishing: "blue",
+  Failed: "red",
+  Cancelled: "gray",
   Rejected: "red",
 };
 

@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 
 export const PLATFORMS = ["instagram", "facebook", "youtube", "linkedin", "x"] as const;
+export type PlatformKey = (typeof PLATFORMS)[number];
 export const MEDIA_KINDS = ["Image", "Video", "Reel", "Short", "Carousel"] as const;
 
 const mediaSchema = new mongoose.Schema(

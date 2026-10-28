@@ -5,6 +5,7 @@
  * Never mixed with API results.
  */
 import type { ContentItem, ContentType, ContentWorkflowStatus, PlatformKey } from "../types";
+import { remapBrands } from "./demoBrands";
 
 const TA = "brd-001";
 const NY = "brd-002";
@@ -33,12 +34,13 @@ const c = (
   scheduledAt,
   createdAt: scheduledAt,
   mediaIds: [],
+  targets: [],
   demo: true,
   thumbClass,
   duration,
 });
 
-export const demoContent: ContentItem[] = [
+const rawDemoContent: ContentItem[] = [
   c(1, "Discover the beauty of Amdavad", "Heritage, culture and modern vibes — all in one city.", ["#Amdavad", "#Heritage", "#Travel"], TA, ["instagram", "facebook", "linkedin", "youtube"], "Image", "Approved", "2026-10-10T10:00:00+05:30", "from-orange-500 via-amber-400 to-slate-700"),
   c(2, "Daily Yoga Tips #12", "Small steps, big changes.", ["#Yoga", "#Wellness", "#Nirvikalp"], NY, ["instagram", "youtube", "linkedin"], "Reel", "Scheduled", "2026-10-10T16:00:00+05:30", "from-orange-600 via-amber-500 to-slate-900"),
   c(3, "5 Ways to Boost Your Productivity", "Better habits. Bigger dreams.", ["#Productivity", "#Tips", "#Tech"], TA, ["instagram", "facebook", "linkedin", "youtube"], "Carousel", "Pending Approval", "2026-10-11T11:00:00+05:30", "from-stone-200 via-stone-400 to-slate-700"),
@@ -48,3 +50,5 @@ export const demoContent: ContentItem[] = [
   c(7, "The Future is Digital", "Stay ahead. Stay creative. Stay connected.", ["#Digital", "#Innovation", "#TA"], TA, ["linkedin", "facebook", "instagram"], "Text", "Rejected", "2026-10-15T10:00:00+05:30", "from-stone-200 via-stone-300 to-stone-500"),
   c(8, "Nirvikalp Yoga Academy", "Yoga for a balanced life.", ["#Yoga", "#Wellness", "#Nirvikalp"], NY, ["instagram", "facebook", "youtube"], "Image", "Approved", "2026-10-16T17:00:00+05:30", "from-sky-700 via-blue-500 to-amber-300"),
 ];
+
+export const buildDemoContent = (brandIds: string[]) => remapBrands(rawDemoContent, brandIds);

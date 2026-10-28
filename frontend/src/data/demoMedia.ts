@@ -5,6 +5,7 @@
  * downloaded, deleted or attached to content. Never mixed with API results.
  */
 import type { MediaItem, MediaKind, PlatformKey } from "../types";
+import { remapBrands } from "./demoBrands";
 
 const TA = "brd-001";
 const NY = "brd-002";
@@ -32,7 +33,7 @@ const m = (
   thumbClass,
 });
 
-export const demoMedia: MediaItem[] = [
+const rawDemoMedia: MediaItem[] = [
   m(1, "Ahmedabad Cityscape", "Image", TA, ["instagram", "facebook", "linkedin"], "10-10", "from-sky-500 via-teal-400 to-emerald-700"),
   m(2, "Work From Anywhere", "Image", TA, ["instagram", "facebook", "linkedin"], "10-09", "from-stone-200 via-stone-300 to-emerald-300"),
   m(3, "Yoga Session", "Video", NY, ["youtube", "instagram"], "10-08", "from-orange-500 via-amber-400 to-slate-800", 94),
@@ -48,3 +49,5 @@ export const demoMedia: MediaItem[] = [
   m(13, "City Lights", "Image", TA, ["instagram", "facebook", "linkedin"], "09-27", "from-indigo-900 via-blue-700 to-orange-400"),
   m(14, "Coffee Moments", "Short", NY, ["instagram", "facebook", "linkedin"], "09-26", "from-stone-100 via-stone-300 to-amber-900", 18),
 ];
+
+export const buildDemoMedia = (brandIds: string[]) => remapBrands(rawDemoMedia, brandIds);

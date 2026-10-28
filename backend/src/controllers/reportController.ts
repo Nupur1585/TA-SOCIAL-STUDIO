@@ -10,6 +10,7 @@ import Content from "../models/Content.js";
 import Media, { PLATFORMS } from "../models/Media.js";
 import Report, { REPORT_FORMATS, REPORT_STATUSES, REPORT_TYPES } from "../models/Report.js";
 import { audit } from "../utils/audit.js";
+import { resolveBrand } from "../utils/brands.js";
 import { toCsv } from "../utils/csv.js";
 import { brandIdSchema, escapeRegex } from "./mediaController.js";
 
@@ -20,7 +21,8 @@ const createSchema = z
   .object({
     name: z.string().trim().min(1).max(120),
     brandId: z.union([brandIdSchema, z.literal("all")]),
-    brandName: z.string().trim().min(1).max(100),
+    // Ignored: the name is read from the Brand record on the server.
+    brandName: z.string().trim().max(100).optional(),
     type: z.enum(REPORT_TYPES),
     format: z.enum(REPORT_FORMATS),
     startDate: z.iso.datetime({ offset: true }),
@@ -79,6 +81,22 @@ async function buildTable(r: ReportDoc): Promise<Table> {
     vals.forEach((v) => m.set(v, (m.get(v) ?? 0) + 1));
     return [...m.entries()].map(([k, v]) => [k, String(v)]);
   };
+
+  if (r.type === "Publishing History") {
+    const posts = await Content.find({ ...brand, ...plat, createdAt: range, "targets.0": { $exists: true } }).sort({ createdAt: -1 }).limit(5000).lean();
+    const rows: string[][] = [];
+    for (const p of posts) {
+      for (const t of p.targets) {
+        rows.push([p.title, p.brandId, t.platform, t.status, String(t.attempts ?? 0), iso(t.lastAttemptAt), iso(t.publishedAt), t.publishedUrl ?? "", t.error ?? ""]);
+      }
+    }
+    return {
+      title: "Publishing History",
+      header: ["Title", "Brand", "Platform", "Result", "Attempts", "Last attempt", "Published", "Link", "Error"],
+      rows,
+      summary: [["Publishing attempts", String(rows.length)], ...tally(rows.map((x) => `Result: ${x[3]}`))],
+    };
+  }
 
   if (r.type === "Media Inventory") {
     const media = await Media.find({ ...brand, ...plat, createdAt: range }).sort({ createdAt: -1 }).limit(5000).lean();
@@ -142,10 +160,16 @@ export async function createReport(req: Request, res: Response) {
     return res.status(400).json({ success: false, message: parsed.error.issues[0]?.message ?? "Invalid report" });
   }
   const d = parsed.data;
+  let brandName = "All Brands";
+  if (d.brandId !== "all") {
+    const brand = await resolveBrand(d.brandId);
+    if (!brand.ok) return res.status(400).json({ success: false, message: brand.message });
+    brandName = brand.brand.name;
+  }
   const report = await Report.create({
     name: d.name,
     brandId: d.brandId,
-    brandName: d.brandName,
+    brandName,
     type: d.type,
     format: d.format,
     startDate: new Date(d.startDate),

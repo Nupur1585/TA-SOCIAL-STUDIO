@@ -4,6 +4,8 @@ import { AppLayout } from "./components/layout/AppLayout";
 import { AuthProvider } from "./context/AuthContext";
 import { BrandsProvider } from "./context/BrandsContext";
 import Brands from "./pages/Brands";
+import AIContent from "./pages/AIContent";
+import AIPlanner from "./pages/AIPlanner";
 import ActivityLogs from "./pages/ActivityLogs";
 import Analytics from "./pages/Analytics";
 import Calendar from "./pages/Calendar";
@@ -34,6 +36,8 @@ function App() {
               />
               <Route path="content" element={<Content />} />
               <Route path="content/new" element={<ContentForm />} />
+              <Route path="content/ai" element={<AIContent />} />
+              <Route path="content/planner" element={<AIPlanner />} />
               <Route path="content/:id/edit" element={<ContentForm />} />
               <Route path="media" element={<MediaLibrary />} />
               <Route path="calendar" element={<Calendar />} />

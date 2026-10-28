@@ -6,6 +6,7 @@ import {
   CircleCheck,
   LayoutGrid,
   List,
+  Loader2,
   Plus,
   Search,
   Share2,
@@ -13,6 +14,8 @@ import {
 import { useSearchParams } from "react-router-dom";
 import { AddBrandModal } from "../components/brands/AddBrandModal";
 import { BrandCard } from "../components/brands/BrandCard";
+import { SocialAccountsModal } from "../components/brands/SocialAccountsModal";
+import { Notice } from "../components/ui/ListControls";
 import { MetricCard } from "../components/ui/MetricCard";
 import { useBrands } from "../context/BrandsContext";
 
@@ -20,7 +23,25 @@ const selectCls =
   "h-10 appearance-none rounded-lg border border-slate-200 bg-white pl-3 pr-9 text-sm text-slate-700 outline-none focus:border-blue-400";
 
 export default function Brands() {
-  const { brands, addBrand, updateBrand, removeBrand } = useBrands();
+  const { brands, loading, error, reload, addBrand, setBrandStatus, removeBrand } = useBrands();
+  const [managing, setManaging] = useState<string | null>(null);
+  const [socialNotice, setSocialNotice] = useState<{ tone: "success" | "error"; text: string } | null>(null);
+  // Ids with a request in flight, so a double click can't submit twice.
+  const [busyIds, setBusyIds] = useState<string[]>([]);
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  const runFor = async (id: string, work: () => Promise<void>) => {
+    if (busyIds.includes(id)) return;
+    setBusyIds((ids) => [...ids, id]);
+    setActionError(null);
+    try {
+      await work();
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : "That action failed.");
+    } finally {
+      setBusyIds((ids) => ids.filter((x) => x !== id));
+    }
+  };
   const [params, setParams] = useSearchParams();
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
@@ -35,9 +56,25 @@ export default function Brands() {
     }
   }, [params, setParams]);
 
+  // The OAuth callback returns here with ?social=connected or ?social_error=...
+  useEffect(() => {
+    const ok = params.get("social") === "connected";
+    const err = params.get("social_error");
+    if (!ok && !err) return;
+    if (ok) {
+      const n = Number(params.get("count") ?? "1");
+      setSocialNotice({ tone: "success", text: `Connected ${n} ${params.get("platform") ?? "social"} account${n === 1 ? "" : "s"}.` });
+      setManaging(params.get("brand"));
+      reload();
+    } else {
+      setSocialNotice({ tone: "error", text: err ?? "Could not connect the account." });
+    }
+    setParams({}, { replace: true });
+  }, [params, setParams, reload]);
+
   const total = brands.length;
   const active = brands.filter((b) => b.status === "Active").length;
-  const platforms = brands.reduce((n, b) => n + b.platforms.length, 0);
+  const platforms = brands.reduce((n, b) => n + b.connectedAccounts, 0);
   const zones = useMemo(
     () => Array.from(new Set(brands.map((b) => b.timezone))),
     [brands],
@@ -188,7 +225,37 @@ export default function Brands() {
           </div>
         </div>
 
-        {filtered.length === 0 ? (
+        {socialNotice && (
+          <div className="mt-4">
+            <Notice tone={socialNotice.tone} onClose={() => setSocialNotice(null)}>
+              {socialNotice.text}
+            </Notice>
+          </div>
+        )}
+        {actionError && (
+          <div className="mt-4">
+            <Notice tone="error" onClose={() => setActionError(null)}>
+              {actionError}
+            </Notice>
+          </div>
+        )}
+
+        {loading ? (
+          <div className="flex items-center justify-center gap-2 py-16 text-sm text-slate-500">
+            <Loader2 size={18} className="animate-spin" /> Loading brands…
+          </div>
+        ) : error ? (
+          <div className="py-12 text-center">
+            <p className="text-sm font-medium text-red-700">{error}</p>
+            <button
+              type="button"
+              onClick={reload}
+              className="mt-3 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
+            >
+              Try again
+            </button>
+          </div>
+        ) : filtered.length === 0 ? (
           <p className="py-16 text-center text-sm text-slate-500">
             {brands.length === 0
               ? "No brands yet. Click Add Brand to create one."
@@ -203,13 +270,12 @@ export default function Brands() {
                 key={b.id}
                 brand={b}
                 layout={layout}
+                onManageAccounts={(brand) => setManaging(brand.id)}
                 onToggleStatus={(brand) =>
-                  updateBrand(brand.id, {
-                    status: brand.status === "Active" ? "Inactive" : "Active",
-                  })
+                  void runFor(brand.id, () => setBrandStatus(brand.id, brand.status === "Active" ? "Inactive" : "Active"))
                 }
                 onDelete={(brand) => {
-                  if (window.confirm(`Delete ${brand.name}?`)) removeBrand(brand.id);
+                  if (window.confirm(`Delete ${brand.name}?`)) void runFor(brand.id, () => removeBrand(brand.id));
                 }}
               />
             ))}
@@ -217,11 +283,19 @@ export default function Brands() {
         )}
       </section>
 
+      {managing && brands.find((b) => b.id === managing) && (
+        <SocialAccountsModal
+          brand={brands.find((b) => b.id === managing)!}
+          onClose={() => setManaging(null)}
+          onChanged={reload}
+        />
+      )}
+
       {adding && (
         <AddBrandModal
           onClose={() => setAdding(false)}
-          onSubmit={(input) => {
-            addBrand(input);
+          onSubmit={async (input) => {
+            await addBrand(input);
             setAdding(false);
           }}
         />

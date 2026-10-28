@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { CheckCircle2, Loader2, UploadCloud } from "lucide-react";
 import { useBrands } from "../../context/BrandsContext";
@@ -65,6 +65,10 @@ export function UploadMediaModal({
   const [progress, setProgress] = useState<number | null>(null);
   const [done, setDone] = useState(false);
 
+  useEffect(() => {
+    if (!brandId && selectedBrandId) setBrandId(selectedBrandId);
+  }, [brandId, selectedBrandId]);
+
   const uploading = progress !== null && !done;
   const isVideo = file?.type.startsWith("video/") ?? false;
   const brand = brands.find((b) => b.id === brandId);
@@ -95,6 +99,7 @@ export function UploadMediaModal({
     setPlatforms((prev) => (prev.includes(p) ? prev.filter((x) => x !== p) : [...prev, p]));
 
   const submit = async () => {
+    if (!brandId) return setError("Create a brand on the Brands page first.");
     if (!file) return setError("Choose a file to upload.");
     if (!title.trim()) return setError("Enter a title.");
     setError(null);

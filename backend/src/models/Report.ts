@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import { PLATFORMS } from "./Media.js";
 
-export const REPORT_TYPES = ["Content Summary", "Schedule Overview", "Media Inventory"] as const;
+export const REPORT_TYPES = ["Content Summary", "Schedule Overview", "Media Inventory", "Publishing History"] as const;
 export const REPORT_FORMATS = ["PDF", "CSV"] as const;
 // "Scheduled" is reserved for recurring reports; nothing creates it yet.
 export const REPORT_STATUSES = ["Ready", "Processing", "Scheduled", "Failed"] as const;

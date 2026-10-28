@@ -20,6 +20,7 @@ interface Props {
   layout: "grid" | "list";
   onToggleStatus: (brand: Brand) => void;
   onDelete: (brand: Brand) => void;
+  onManageAccounts: (brand: Brand) => void;
 }
 
 function Info({
@@ -42,7 +43,7 @@ function Info({
   );
 }
 
-export function BrandCard({ brand, layout, onToggleStatus, onDelete }: Props) {
+export function BrandCard({ brand, layout, onToggleStatus, onDelete, onManageAccounts }: Props) {
   const [menu, setMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
@@ -113,6 +114,17 @@ export function BrandCard({ brand, layout, onToggleStatus, onDelete }: Props) {
                         className="w-full rounded-md px-3 py-2 text-left hover:bg-slate-50"
                         onClick={() => {
                           setMenu(false);
+                          onManageAccounts(brand);
+                        }}
+                      >
+                        Social accounts
+                      </button>
+                    </li>
+                    <li>
+                      <button
+                        className="w-full rounded-md px-3 py-2 text-left hover:bg-slate-50"
+                        onClick={() => {
+                          setMenu(false);
                           onToggleStatus(brand);
                         }}
                       >
@@ -144,6 +156,13 @@ export function BrandCard({ brand, layout, onToggleStatus, onDelete }: Props) {
                   +{extra} more
                 </span>
               )}
+              <button
+                type="button"
+                onClick={() => onManageAccounts(brand)}
+                className="ml-auto rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+              >
+                {brand.connectedAccounts > 0 ? `${brand.connectedAccounts} connected · Manage` : "Connect accounts"}
+              </button>
             </div>
           </div>
         </div>

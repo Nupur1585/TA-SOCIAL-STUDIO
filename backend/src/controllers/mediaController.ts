@@ -11,6 +11,7 @@ import {
 import Content from "../models/Content.js";
 import Media, { MEDIA_KINDS, PLATFORMS } from "../models/Media.js";
 import { audit } from "../utils/audit.js";
+import { resolveBrand } from "../utils/brands.js";
 
 const BRAND_RE = /^[A-Za-z0-9_-]{1,64}$/;
 export const brandIdSchema = z.string().regex(BRAND_RE, "Invalid brand");
@@ -120,6 +121,8 @@ export async function uploadMedia(req: Request, res: Response) {
   const parsed = uploadSchema.safeParse(req.body);
   if (!parsed.success) return reject("Invalid brand, type or platform selection");
   const body = parsed.data;
+  const brand = await resolveBrand(body.brandId, true);
+  if (!brand.ok) return reject(brand.message);
 
   const isVideo = file.mimetype.startsWith("video/");
   if (!isVideo && file.size > MAX_IMAGE_BYTES) return reject("Images must be 15 MB or smaller");
@@ -208,7 +211,10 @@ export async function updateMedia(req: Request, res: Response) {
 export async function deleteMedia(req: Request, res: Response) {
   const media = await findMedia(req, res);
   if (!media) return;
-  await Content.updateMany({ mediaIds: media._id }, { $pull: { mediaIds: media._id } });
+  const used = await Content.countDocuments({ mediaIds: media._id });
+  if (used > 0) {
+    return res.status(409).json({ success: false, message: `This file is used by ${used} post${used === 1 ? "" : "s"}. Remove it from them (or delete them) first.` });
+  }
   await media.deleteOne();
   removeFile(media.filename);
   await audit(req, { action: "Deleted media", category: "Media", resource: media.title, resourceId: String(media._id) });

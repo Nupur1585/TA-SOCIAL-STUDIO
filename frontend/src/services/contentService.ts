@@ -26,6 +26,8 @@ export interface ContentInput {
   hashtags: string[];
   brandId: string;
   platforms: PlatformKey[];
+  /** Connected social accounts to publish to; platforms are derived from them on the server. */
+  accountIds: string[];
   type: ContentType;
   scheduledAt: string | null;
   mediaIds: string[];
@@ -58,3 +60,21 @@ export const duplicateContent = async (id: string): Promise<ContentItem> =>
 export const deleteContent = async (id: string): Promise<void> => {
   await api.delete(`/admin/content/${id}`);
 };
+
+export const rescheduleContent = async (id: string, scheduledAt: string): Promise<ContentItem> =>
+  (await api.post(`/admin/content/${id}/reschedule`, { scheduledAt })).data.data;
+
+/** Starts publishing immediately; the server finishes in the background (status becomes Publishing). */
+export const publishContentNow = async (id: string): Promise<ContentItem> =>
+  (await api.post(`/admin/content/${id}/publish-now`)).data.data;
+
+/** Per-rule problems the server returns when a post can't be scheduled or published yet. */
+export const apiProblems = (error: unknown): string[] =>
+  (error as { response?: { data?: { problems?: string[] } } })?.response?.data?.problems ?? [];
+
+/** The server message plus any validation problems, as one readable string. */
+export function apiFullMessage(error: unknown, fallback: string): string {
+  const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message ?? fallback;
+  const problems = apiProblems(error);
+  return problems.length ? `${message} ${problems.join(" ")}` : message;
+}

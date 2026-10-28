@@ -109,6 +109,8 @@ export function Sidebar({
                 {[
                   { to: "/content", label: "All Content" },
                   { to: "/content/new", label: "Create Content" },
+                  { to: "/content/ai", label: "AI Create" },
+                  { to: "/content/planner", label: "AI Planner" },
                   { to: "/content?status=Pending%20Approval", label: "Approvals" },
                 ].map((s) => {
                   const [path, query] = s.to.split("?");

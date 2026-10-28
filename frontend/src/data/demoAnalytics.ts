@@ -5,7 +5,7 @@
  * services/ once a real analytics endpoint exists. Never present as live data.
  */
 import { addDays, format, subDays } from "date-fns";
-import { demoContent } from "./demoContent";
+import { buildDemoContent } from "./demoContent";
 import type { ContentItem, PlatformKey } from "../types";
 
 export interface AnalyticsPoint {
@@ -33,7 +33,8 @@ export interface AnalyticsData {
   top: TopContent[];
 }
 
-const brandFactor = (brandId: string) => (brandId === "all" ? 1 : brandId === "brd-001" ? 0.62 : 0.38);
+const brandFactor = (brandId: string, brandIds: string[]) =>
+  brandId === "all" ? 1 : brandId === brandIds[0] ? 0.62 : 0.38;
 const wave = (i: number, seed: number) => 1 + 0.35 * Math.sin(i * 0.9 + seed) + 0.15 * Math.cos(i * 0.31 + seed * 2);
 
 function day(i: number, f: number) {
@@ -57,8 +58,8 @@ const engagementOf = (from: number, to: number, f: number) =>
   (["likes", "comments", "shares", "saves"] as const).reduce((a, k) => a + sum(from, to, f, k), 0);
 const pct = (cur: number, prev: number) => (prev ? Math.round(((cur - prev) / prev) * 100) : 0);
 
-export function buildAnalytics(days: number, brandId: string, today = new Date()): AnalyticsData {
-  const f = brandFactor(brandId);
+export function buildAnalytics(days: number, brandId: string, brandIds: string[], today = new Date()): AnalyticsData {
+  const f = brandFactor(brandId, brandIds);
   // Index 0 is the first day of the current period; the previous period sits before it.
   const base = 1000;
   const start = base;
@@ -93,7 +94,7 @@ export function buildAnalytics(days: number, brandId: string, today = new Date()
 
   const typeWeights: [string, number][] = [["Posts", 3400], ["Reels", 4600], ["Stories", 2200], ["Videos", 3100], ["Carousels", 2700]];
 
-  const top = demoContent
+  const top = buildDemoContent(brandIds)
     .filter((c) => brandId === "all" || c.brandId === brandId)
     .map((item, i) => ({
       item,

@@ -20,6 +20,8 @@ export interface Brand {
   platforms: PlatformKey[];
   status: BrandStatus;
   assetCount: number;
+  /** Social accounts that are actually connected and usable (from the backend). */
+  connectedAccounts: number;
   guidelinesUpdated: string;
   /** Tailwind gradient classes used for banner and logo (no image assets exist yet). */
   bannerClass: string;
@@ -73,8 +75,28 @@ export type ContentWorkflowStatus =
   | "Pending Approval"
   | "Approved"
   | "Scheduled"
+  | "Publishing"
   | "Published"
+  | "Failed"
+  | "Cancelled"
   | "Rejected";
+
+/** One connected account a post is published to, with its own result. */
+export interface ContentTarget {
+  id: string;
+  socialAccountId: string;
+  platform: PlatformKey;
+  accountName: string;
+  username: string;
+  accountStatus: string;
+  status: "Pending" | "Publishing" | "Published" | "Failed";
+  attempts: number;
+  lastAttemptAt: string | null;
+  publishedAt: string | null;
+  publishedId: string;
+  publishedUrl: string;
+  error: string;
+}
 
 export interface ContentItem {
   id: string;
@@ -88,6 +110,9 @@ export interface ContentItem {
   scheduledAt: string | null;
   createdAt: string;
   mediaIds: string[];
+  targets: ContentTarget[];
+  publishedAt?: string | null;
+  nextAttemptAt?: string | null;
   /** True for items from data/demoContent.ts: they exist only in the browser. */
   demo?: boolean;
   thumbClass?: string;

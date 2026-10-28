@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -34,12 +35,13 @@ export function AddBrandModal({
   onSubmit,
 }: {
   onClose: () => void;
-  onSubmit: (brand: NewBrandInput) => void;
+  /** Rejects with a user-readable message when the server refuses the brand. */
+  onSubmit: (brand: NewBrandInput) => Promise<void>;
 }) {
   const {
     register,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -53,8 +55,12 @@ export function AddBrandModal({
     },
   });
 
-  const submit = (v: FormValues) => {
-    onSubmit({
+  const [serverError, setServerError] = useState<string | null>(null);
+
+  const submit = async (v: FormValues) => {
+    setServerError(null);
+    try {
+      await onSubmit({
       name: v.name,
       tagline: v.tagline,
       description: v.description,
@@ -65,10 +71,10 @@ export function AddBrandModal({
         .filter(Boolean)
         .map((h) => (h.startsWith("#") ? h : `#${h}`)),
       platforms: v.platforms as PlatformKey[],
-      status: "Active",
-      assetCount: 0,
-      guidelinesUpdated: "just now",
-    });
+      });
+    } catch (e) {
+      setServerError(e instanceof Error ? e.message : "Could not create the brand.");
+    }
   };
 
   return (
@@ -161,6 +167,12 @@ export function AddBrandModal({
           </fieldset>
         </div>
 
+        {serverError && (
+          <p role="alert" className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+            {serverError}
+          </p>
+        )}
+
         <div className="mt-6 flex justify-end gap-3">
           <button
             type="button"
@@ -171,9 +183,10 @@ export function AddBrandModal({
           </button>
           <button
             type="submit"
-            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+            disabled={isSubmitting}
+            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
           >
-            Create Brand
+            {isSubmitting ? "Creating…" : "Create Brand"}
           </button>
         </div>
       </form>

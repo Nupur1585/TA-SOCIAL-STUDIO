@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ArrowUp,
   Building2,
@@ -15,9 +15,9 @@ import { RecentActivity } from "../components/dashboard/RecentActivity";
 import { UpcomingContentTable } from "../components/dashboard/UpcomingContentTable";
 import { MetricCard } from "../components/ui/MetricCard";
 import { useBrands } from "../context/BrandsContext";
+import { listContent } from "../services/contentService";
 import {
   contentOverviewData,
-  dashboardStats,
   platformDistribution,
   recentActivity,
   totalPosts,
@@ -65,6 +65,20 @@ function Select({
 }
 
 export default function Dashboard() {
+  // Real post counts from the backend; null while loading, "failed" if the request errors.
+  const [counts, setCounts] = useState<Record<string, number> | null | "failed">(null);
+  useEffect(() => {
+    let cancelled = false;
+    listContent({ limit: 1 })
+      .then((r) => !cancelled && setCounts(r.statusCounts))
+      .catch(() => !cancelled && setCounts("failed"));
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  const real = counts && counts !== "failed" ? counts : null;
+  const countOf = (s: string) => (real ? (real[s] ?? 0) : "–");
+  const totalReal = real ? Object.values(real).reduce((a, b) => a + b, 0) : "–";
   const { brands } = useBrands();
   const [brandFilter, setBrandFilter] = useState("all");
   const [range, setRange] = useState("30");
@@ -140,25 +154,22 @@ export default function Dashboard() {
         />
         <MetricCard
           title="Total Content"
-          value={dashboardStats.totalContent}
+          value={totalReal}
           icon={FileText}
           tone="purple"
-          footer={dashboardStats.contentGrowth}
-          footerTone="green"
-          footerIcon={ArrowUp}
+          footer={counts === "failed" ? "Could not load" : `${countOf("Published")} published · ${countOf("Failed")} failed`}
+          footerTone={counts === "failed" ? "red" : "muted"}
         />
         <MetricCard
-          title="Upcoming Content"
-          value={dashboardStats.upcomingContent}
+          title="Scheduled Posts"
+          value={countOf("Scheduled")}
           icon={CalendarDays}
           tone="green"
-          footer={`${dashboardStats.upcomingThisWeek} this week`}
-          footerTone="green"
-          footerIcon={ArrowUp}
+          footer={`${countOf("Draft")} drafts`}
         />
         <MetricCard
           title="Pending Approval"
-          value={dashboardStats.pendingApproval}
+          value={countOf("Pending Approval")}
           icon={Clock}
           tone="orange"
           footer="Needs attention"
@@ -166,6 +177,7 @@ export default function Dashboard() {
         />
       </div>
 
+      <p className="text-xs text-slate-500">The four cards above show real data. The charts and activity below are sample data until analytics are connected.</p>
       <div className="grid gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <ContentOverviewChart data={chartData} />
         <PlatformDistribution data={platformDistribution} total={totalPosts} />

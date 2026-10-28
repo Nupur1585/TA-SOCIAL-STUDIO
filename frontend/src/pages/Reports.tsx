@@ -29,7 +29,7 @@ import {
 import type { PlatformKey } from "../types";
 
 const PAGE_SIZE = 6;
-const TYPES: ReportType[] = ["Content Summary", "Schedule Overview", "Media Inventory"];
+const TYPES: ReportType[] = ["Content Summary", "Schedule Overview", "Media Inventory", "Publishing History"];
 const STATUSES: ReportStatus[] = ["Ready", "Processing", "Scheduled", "Failed"];
 const PLATFORMS: PlatformKey[] = ["instagram", "facebook", "youtube", "linkedin", "x"];
 const tone: Record<ReportStatus, BadgeTone> = { Ready: "green", Processing: "blue", Scheduled: "purple", Failed: "red" };
@@ -337,7 +337,7 @@ function CreateReportModal({ onClose, onCreated }: { onClose: () => void; onCrea
   const { brands, selectedBrandId } = useBrands();
   const today = format(new Date(), "yyyy-MM-dd");
   const [name, setName] = useState("");
-  const [brandId, setBrandId] = useState(selectedBrandId);
+  const [brandId, setBrandId] = useState(selectedBrandId || "all");
   const [type, setType] = useState<ReportType>("Content Summary");
   const [start, setStart] = useState(format(subDays(new Date(), 29), "yyyy-MM-dd"));
   const [end, setEnd] = useState(today);

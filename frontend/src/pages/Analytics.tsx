@@ -59,7 +59,8 @@ export default function Analytics() {
   const [details, setDetails] = useState<ContentItem | null>(null);
 
   const days = Number(range);
-  const data = useMemo(() => buildAnalytics(days, brandId), [days, brandId]);
+  const brandIds = useMemo(() => brands.map((b) => b.id), [brands]);
+  const data = useMemo(() => buildAnalytics(days, brandId, brandIds), [days, brandId, brandIds]);
   const periodLabel = `previous ${days} days`;
   const trend = (n: number) => `${n >= 0 ? "+" : ""}${n}% from ${periodLabel}`;
   const tone = (n: number) => (n >= 0 ? ("green" as const) : ("red" as const));

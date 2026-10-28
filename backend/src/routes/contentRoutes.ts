@@ -6,6 +6,8 @@ import {
   duplicateContent,
   getContent,
   listContent,
+  publishNow,
+  reschedule,
   updateContent,
 } from "../controllers/contentController.js";
 
@@ -17,6 +19,8 @@ router.post("/", createContent);
 router.get("/:id", getContent);
 router.patch("/:id", updateContent);
 router.post("/:id/status", changeStatus);
+router.post("/:id/reschedule", reschedule);
+router.post("/:id/publish-now", publishNow);
 router.post("/:id/duplicate", duplicateContent);
 router.delete("/:id", deleteContent);
 

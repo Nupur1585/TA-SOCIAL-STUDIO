@@ -48,3 +48,20 @@ export async function audit(req: Request, entry: AuditEntry): Promise<void> {
     console.error("Failed to write audit log", error);
   }
 }
+
+/** For background work (the scheduler) where there is no request or signed-in admin. */
+export async function auditSystem(entry: Omit<AuditEntry, "actorEmail">): Promise<void> {
+  try {
+    await AuditLog.create({
+      actorEmail: "system (scheduler)",
+      action: entry.action,
+      category: entry.category,
+      result: entry.result ?? "Success",
+      resource: (entry.resource ?? "").slice(0, 200),
+      resourceId: entry.resourceId ?? "",
+      metadata: cleanMetadata(entry.metadata),
+    });
+  } catch (error) {
+    console.error("Failed to write audit log", error);
+  }
+}

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { FileText, Loader2, Plus } from "lucide-react";
+import { FileText, Loader2, Plus, Sparkles } from "lucide-react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { ContentCard, ContentRow } from "../components/content/ContentCard";
 import { ContentDetailsModal, ScheduleModal } from "../components/content/ContentModals";
@@ -14,10 +14,13 @@ import {
 } from "../components/ui/ListControls";
 import { ConfirmDialog } from "../components/ui/Overlay";
 import { useBrands } from "../context/BrandsContext";
-import { demoContent } from "../data/demoContent";
+import { buildDemoContent } from "../data/demoContent";
 import { useDebounced } from "../lib/useDebounced";
 import { apiErrorMessage } from "../services/mediaService";
 import {
+  apiFullMessage,
+  publishContentNow,
+  rescheduleContent,
   changeContentStatus,
   deleteContent,
   duplicateContent,
@@ -34,7 +37,10 @@ const STATUSES: { key: ContentWorkflowStatus | "all"; label: string }[] = [
   { key: "Pending Approval", label: "Pending Approval" },
   { key: "Approved", label: "Approved" },
   { key: "Scheduled", label: "Scheduled" },
+  { key: "Publishing", label: "Publishing" },
   { key: "Published", label: "Published" },
+  { key: "Failed", label: "Failed" },
+  { key: "Cancelled", label: "Cancelled" },
   { key: "Rejected", label: "Rejected" },
 ];
 const TYPES: ContentType[] = ["Image", "Reel", "Carousel", "Video", "Short", "Text"];
@@ -129,9 +135,18 @@ export default function Content() {
     };
   }, [query, reload]);
 
+  // While something is being published, refresh until it settles.
+  const anyPublishing = items.some((i) => i.status === "Publishing");
+  useEffect(() => {
+    if (!anyPublishing) return;
+    const t = setInterval(() => setReload((n) => n + 1), 4000);
+    return () => clearInterval(t);
+  }, [anyPublishing]);
+
   // Demonstration data is shown only while the database holds no content at all.
   const demoMode = !loading && !error && libraryEmpty;
-  const demoMatches = useMemo(() => (demoMode ? filterDemo(demoContent, filters, status) : []), [demoMode, filters, status]);
+  const demoContent = useMemo(() => buildDemoContent(brands.map((b) => b.id)), [brands]);
+  const demoMatches = useMemo(() => (demoMode ? filterDemo(demoContent, filters, status) : []), [demoMode, demoContent, filters, status]);
   const shownTotal = demoMode ? demoMatches.length : total;
   const shown = demoMode ? demoMatches.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE) : items;
   const pageCount = Math.max(1, Math.ceil(shownTotal / PAGE_SIZE));
@@ -144,7 +159,7 @@ export default function Content() {
         )
       : statusCounts;
     return { ...base, all: Object.values(base).reduce((a, b) => a + b, 0) };
-  }, [demoMode, filters, statusCounts]);
+  }, [demoMode, demoContent, filters, statusCounts]);
 
   const run = async (work: () => Promise<unknown>, success: string) => {
     setBusy(true);
@@ -154,7 +169,7 @@ export default function Content() {
       setReload((n) => n + 1);
       return true;
     } catch (e) {
-      setNotice({ tone: "error", text: apiErrorMessage(e, "That action failed. Please try again.") });
+      setNotice({ tone: "error", text: apiFullMessage(e, "That action failed. Please try again.") });
       return false;
     } finally {
       setBusy(false);
@@ -167,18 +182,35 @@ export default function Content() {
   const actionsFor = (c: ContentItem): MenuAction[] => {
     const demo = { disabled: !!c.demo, hint: "Demonstration item" };
     const acts: MenuAction[] = [{ label: "View details", onSelect: () => setDetails(c) }];
-    if (c.status === "Draft" || c.status === "Rejected") {
+    if (["Draft", "Rejected", "Failed", "Cancelled", "Scheduled"].includes(c.status)) {
       acts.push({ label: "Edit", onSelect: () => navigate(`/content/${c.id}/edit`), ...demo });
+    }
+    if (c.status === "Draft" || c.status === "Rejected") {
       acts.push({ label: "Submit for approval", onSelect: () => move(c, "Pending Approval", "Submitted for approval."), ...demo });
+    }
+    if (["Draft", "Approved", "Scheduled", "Failed", "Cancelled"].includes(c.status)) {
+      acts.push({
+        label: c.status === "Failed" ? "Retry now" : "Publish now",
+        onSelect: () => {
+          if (window.confirm(`Publish "${c.title}" now to ${c.targets.length || "the selected"} account(s)?`)) {
+            void run(() => publishContentNow(c.id), "Publishing started. Status updates automatically.");
+          }
+        },
+        ...demo,
+      });
     }
     if (c.status === "Pending Approval") {
       acts.push({ label: "Approve", onSelect: () => move(c, "Approved", "Content approved."), ...demo });
       acts.push({ label: "Reject", onSelect: () => move(c, "Rejected", "Content rejected."), ...demo });
     }
-    if (c.status === "Approved") {
+    if (["Draft", "Approved", "Failed", "Cancelled"].includes(c.status)) {
       acts.push({ label: "Schedule", onSelect: () => setScheduling(c), ...demo });
     }
-    if (["Pending Approval", "Approved", "Scheduled"].includes(c.status)) {
+    if (c.status === "Scheduled") {
+      acts.push({ label: "Reschedule", onSelect: () => setScheduling(c), ...demo });
+      acts.push({ label: "Cancel scheduling", onSelect: () => move(c, "Cancelled", "Scheduling cancelled."), ...demo });
+    }
+    if (["Pending Approval", "Approved", "Scheduled", "Failed", "Cancelled"].includes(c.status)) {
       acts.push({ label: "Move to Draft", onSelect: () => move(c, "Draft", "Moved back to draft."), ...demo });
     }
     acts.push({
@@ -207,6 +239,14 @@ export default function Content() {
           </h1>
           <p className="mt-2 text-sm text-slate-500">Manage all your social media content in one place.</p>
         </div>
+        <div className="flex flex-wrap items-center gap-3">
+          <Link
+            to="/content/ai"
+            className="flex items-center gap-2 rounded-lg border border-blue-600 bg-white px-5 py-2.5 text-sm font-semibold text-blue-600 hover:bg-blue-50"
+          >
+            <Sparkles size={18} />
+            Generate with AI
+          </Link>
         <Link
           to="/content/new"
           className="flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
@@ -214,6 +254,7 @@ export default function Content() {
           <Plus size={18} />
           Create Content
         </Link>
+        </div>
       </div>
 
       <div className="grid gap-3 rounded-xl border border-slate-200/70 bg-white p-3 shadow-sm sm:grid-cols-2 xl:grid-cols-[minmax(0,2fr)_repeat(4,minmax(0,1fr))_auto]">
@@ -349,7 +390,10 @@ export default function Content() {
           onClose={() => setScheduling(null)}
           onSubmit={(iso) => {
             const target = scheduling;
-            void run(() => changeContentStatus(target.id, "Scheduled", iso), "Content scheduled.").then((ok) => {
+            void run(
+              () => (target.status === "Scheduled" ? rescheduleContent(target.id, iso) : changeContentStatus(target.id, "Scheduled", iso)),
+              target.status === "Scheduled" ? "Post rescheduled." : "Content scheduled.",
+            ).then((ok) => {
               if (ok) setScheduling(null);
             });
           }}

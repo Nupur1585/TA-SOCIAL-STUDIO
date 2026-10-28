@@ -9,7 +9,7 @@ import type { MenuAction } from "../components/ui/KebabMenu";
 import { Notice, SearchInput, SelectField, ViewToggle, type Layout } from "../components/ui/ListControls";
 import { ConfirmDialog } from "../components/ui/Overlay";
 import { useBrands } from "../context/BrandsContext";
-import { demoMedia } from "../data/demoMedia";
+import { buildDemoMedia } from "../data/demoMedia";
 import { useDebounced } from "../lib/useDebounced";
 import {
   apiErrorMessage,
@@ -124,7 +124,8 @@ export default function MediaLibrary() {
 
   // Demonstration data only appears when the library holds no real uploads at all.
   const demoMode = !loading && !error && libraryEmpty;
-  const demoVisible = useMemo(() => (demoMode ? filterDemo(demoMedia, filters) : []), [demoMode, filters]);
+  const demoMedia = useMemo(() => buildDemoMedia(brands.map((b) => b.id)), [brands]);
+  const demoVisible = useMemo(() => (demoMode ? filterDemo(demoMedia, filters) : []), [demoMode, demoMedia, filters]);
   const shown = demoMode ? demoVisible : items;
   const shownTotal = demoMode ? demoVisible.length : total;
 
