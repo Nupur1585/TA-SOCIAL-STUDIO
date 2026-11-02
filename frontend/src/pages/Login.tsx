@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { isAxiosError } from "axios";
 import { Eye, EyeOff, Loader2, Lock, Mail } from "lucide-react";
-import { Navigate, useLocation, useNavigate } from "react-router-dom";
+import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { BrandLogo } from "../components/ui/BrandLogo";
 import { useAuth } from "../context/AuthContext";
 
@@ -188,6 +188,17 @@ export default function Login() {
       </main>
 
       <footer className="py-6 text-center text-xs text-slate-500">
+        <nav className="mb-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
+          <Link to="/privacy" className="hover:text-slate-700 hover:underline">
+            Privacy Policy
+          </Link>
+          <Link to="/data-deletion" className="hover:text-slate-700 hover:underline">
+            Data Deletion
+          </Link>
+          <Link to="/terms" className="hover:text-slate-700 hover:underline">
+            Terms of Service
+          </Link>
+        </nav>
         &copy; Tech Amdavad LLP &middot; TA Social Studio
       </footer>
     </div>

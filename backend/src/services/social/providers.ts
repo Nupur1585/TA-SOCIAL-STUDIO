@@ -103,7 +103,7 @@ const meta: Provider = {
   env: ["META_APP_ID", "META_APP_SECRET", "META_REDIRECT_URI"],
   pkce: false,
   notes:
-    "Instagram needs a Business or Creator account linked to a Facebook Page. Publishing permissions require Meta App Review before accounts other than your own app testers can use them.",
+    "Instagram needs a Business or Creator account linked to a Facebook Page. Publishing permissions require Meta App Review before accounts other than your own app testers can use them. In Meta for Developers the app's use case must include these permissions (Use cases > Customize), the redirect URI must be listed under Valid OAuth Redirect URIs, and you must hold a role on the app while it is in Development mode.",
   configured: () => allSet(meta.env),
   redirectUri: () => env("META_REDIRECT_URI"),
   authUrl: ({ platform, state }) =>
@@ -124,10 +124,13 @@ const meta: Provider = {
     // Long-lived user token; Page tokens derived from it do not expire.
     const long = await http("Meta", `${graph()}/oauth/access_token?${q({ grant_type: "fb_exchange_token", client_id: env("META_APP_ID"), client_secret: env("META_APP_SECRET"), fb_exchange_token: shortToken })}`);
     const userToken = str(long["access_token"]) || shortToken;
-    const pages = await http(
-      "Meta",
-      `${graph()}/me/accounts?${q({ fields: "id,name,access_token,picture{url},instagram_business_account{id,username,name,profile_picture_url}", limit: "100", access_token: userToken })}`,
-    );
+    // Only Instagram needs the linked Instagram account. Facebook asks for Page basics alone, so it neither depends
+    // on instagram_* access nor reads Instagram data it does not use.
+    const pageFields =
+      platform === "instagram"
+        ? "id,name,access_token,picture{url},instagram_business_account{id,username,name,profile_picture_url}"
+        : "id,name,access_token,picture{url}";
+    const pages = await http("Meta", `${graph()}/me/accounts?${q({ fields: pageFields, limit: "100", access_token: userToken })}`);
     const list = Array.isArray(pages["data"]) ? (pages["data"] as Record<string, unknown>[]) : [];
     const scopes = metaScopes[platform] ?? [];
     const out: AccountData[] = [];

@@ -1,5 +1,5 @@
-version: "3.8"
-
+# LOCAL DEVELOPMENT ONLY. Do not use these settings on a server.
+# Ports are bound to 127.0.0.1 so the database and Mongo Express are not reachable from other machines.
 services:
 
   mongodb:
@@ -7,10 +7,14 @@ services:
     container_name: ta-social-studio-mongodb
     restart: always
     ports:
-      - "27017:27017"
+      - "127.0.0.1:27017:27017"
     environment:
+      # The MONGO_INITDB_* values are read ONLY when /data/db is empty (first start). Changing them later does
+      # NOT change an existing user's password and does NOT rename a database: see the password plan in the docs.
       MONGO_INITDB_ROOT_USERNAME: admin
       MONGO_INITDB_ROOT_PASSWORD: password
+      # Only the database that init scripts run against. The app's real database name comes from MONGODB_URI
+      # (tech_amdavad_social_studio in the current local setup); MongoDB creates it on first write.
       MONGO_INITDB_DATABASE: ta_social_studio
     volumes:
       - mongo_data:/data/db
@@ -20,11 +24,18 @@ services:
     container_name: ta-social-studio-mongo-express
     restart: always
     ports:
-      - "8081:8081"
+      - "127.0.0.1:8081:8081"
     environment:
       ME_CONFIG_MONGODB_ADMINUSERNAME: admin
       ME_CONFIG_MONGODB_ADMINPASSWORD: password
       ME_CONFIG_MONGODB_SERVER: mongodb
+      # The image bakes in ME_CONFIG_MONGODB_URL=mongodb://mongo:27017 and its start-up script waits for THAT host
+      # (not ME_CONFIG_MONGODB_SERVER), logging "mongo: Name does not resolve" for ~10s before continuing. The app
+      # itself uses ME_CONFIG_MONGODB_SERVER and ignores this URL, so it only points the start-up wait at the
+      # right service. No credentials belong here.
+      ME_CONFIG_MONGODB_URL: mongodb://mongodb:27017
+      # No login screen: keep this service on 127.0.0.1 only, and stop it when not in use
+      # (docker compose stop mongo-express). Enabling ME_CONFIG_BASICAUTH needs a username/password you choose.
       ME_CONFIG_BASICAUTH: "false"
     depends_on:
       - mongodb

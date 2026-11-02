@@ -12,6 +12,9 @@ import Calendar from "./pages/Calendar";
 import Content from "./pages/Content";
 import ContentForm from "./pages/ContentForm";
 import Dashboard from "./pages/Dashboard";
+import DataDeletion from "./pages/DataDeletion";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import Terms from "./pages/Terms";
 import Login from "./pages/Login";
 import MediaLibrary from "./pages/MediaLibrary";
 import Placeholder from "./pages/Placeholder";
@@ -23,6 +26,10 @@ function App() {
       <BrandsProvider>
         <Routes>
           <Route path="login" element={<Login />} />
+          {/* Public legal pages: must stay outside ProtectedRoute (Meta and visitors read them signed out). */}
+          <Route path="privacy" element={<PrivacyPolicy />} />
+          <Route path="data-deletion" element={<DataDeletion />} />
+          <Route path="terms" element={<Terms />} />
           <Route element={<ProtectedRoute />}>
             <Route element={<AppLayout />}>
               <Route index element={<Navigate to="/dashboard" replace />} />

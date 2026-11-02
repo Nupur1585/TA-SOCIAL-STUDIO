@@ -45,6 +45,17 @@ async function accountFrom(req: Request, res: Response) {
 
 const label = (a: { platform: string; displayName: string }) => `${a.platform}: ${a.displayName}`;
 
+/**
+ * Short, safe text from the provider's error_reason / error_description query parameters, so the admin can see
+ * why the login failed. Only plain characters survive and the length is capped: the value comes from the URL.
+ */
+export function denialMessage(query: Record<string, unknown>): string {
+  const clean = (v: unknown) => (typeof v === "string" ? v.replace(/[^A-Za-z0-9 .,:'()/_-]/g, "").trim().slice(0, 160) : "");
+  const detail = clean(query["error_description"]) || clean(query["error_reason"]);
+  const base = query["error"] === "access_denied" || !query["error"] ? "Authorization was cancelled or denied." : "The provider returned an error.";
+  return detail ? `${base} (${detail})` : base;
+}
+
 export function listProviders(_req: Request, res: Response) {
   res.json({ success: true, data: providerStatus() });
 }
@@ -123,7 +134,9 @@ export async function oauthCallback(req: Request, res: Response) {
 
   if (!PROVIDERS[providerId]) return back({ social_error: "Unknown provider." });
   if (typeof req.query["error"] === "string" || !code || !state) {
-    return back({ social_error: "Authorization was cancelled or denied." });
+    const message = denialMessage(req.query);
+    await audit(req, { action: "Connected social account", category: "Brands", result: "Failed", resource: providerId, metadata: { reason: message } });
+    return back({ social_error: message });
   }
   try {
     const r = await completeConnect(req.user!.id, providerId, state, code);

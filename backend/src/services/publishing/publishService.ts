@@ -66,7 +66,7 @@ const isRetryable = (e: unknown) => (e instanceof PublishError ? e.retryable : e
  * Publishes every unfinished target of a post that has already been claimed (status "Publishing").
  * Targets that are already Published are never touched, so a retry cannot post twice.
  */
-export async function publishClaimed(c: ContentDoc): Promise<void> {
+async function runClaimed(c: ContentDoc): Promise<void> {
   const problems = await assessContent(c);
   if (problems.length > 0) {
     for (const t of c.targets) {
@@ -127,6 +127,20 @@ export async function publishClaimed(c: ContentDoc): Promise<void> {
     c.set({ status: "Failed", nextAttemptAt: undefined });
   }
   await c.save();
+}
+
+let activePublishes = 0;
+
+/** Number of posts being published right now, so a shutdown can wait for them instead of cutting them off. */
+export const publishesInFlight = () => activePublishes;
+
+export async function publishClaimed(c: ContentDoc): Promise<void> {
+  activePublishes += 1;
+  try {
+    await runClaimed(c);
+  } finally {
+    activePublishes -= 1;
+  }
 }
 
 /** Atomically takes the next due post. Only one worker can win a given post, so it cannot publish twice. */
