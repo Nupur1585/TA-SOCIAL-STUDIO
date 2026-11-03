@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { uploadDir } from "../../middleware/upload.js";
 import type { PlatformKey } from "../../models/Media.js";
+import { ensureInstagramJpeg, IG_VARIANT, ImageConversionError } from "./instagramImage.js";
 import { signedMediaUrl } from "./mediaUrl.js";
 
 /** A failure with a message that is safe to store and show. */
@@ -118,7 +119,14 @@ async function instagram(ctx: PublishContext): Promise<PublishResult> {
     create.set("media_type", "REELS");
     create.set("video_url", signedMediaUrl(m.id));
   } else {
-    create.set("image_url", signedMediaUrl(m.id));
+    // Instagram only takes JPEG: convert (or reuse) before any request, so a bad image fails cleanly with nothing posted.
+    let converted: boolean;
+    try {
+      converted = (await ensureInstagramJpeg(m.filename, m.mimeType)).converted;
+    } catch (e) {
+      throw new PublishError(e instanceof ImageConversionError ? e.message : "The image could not be prepared for Instagram.");
+    }
+    create.set("image_url", signedMediaUrl(m.id, converted ? IG_VARIANT : ""));
   }
   const container = await call("Instagram", `${g}/${encodeURIComponent(igId)}/media`, {
     method: "POST",

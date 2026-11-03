@@ -36,7 +36,8 @@ export function validateForPlatform(platform: PlatformKey, post: PostInfo): stri
   switch (platform) {
     case "instagram":
       need(media.length === 1, "Instagram posts need exactly one image or video (carousels are not supported yet).");
-      need(images.every((m) => m.mimeType === "image/jpeg"), "Instagram only accepts JPEG images through its API. Convert PNG/WEBP/GIF files.");
+      // PNG, WEBP and GIF are converted to JPEG automatically when the post is published.
+      need(images.every((m) => ["image/jpeg", "image/png", "image/webp", "image/gif"].includes(m.mimeType)), "Instagram images must be JPEG, PNG, WEBP or GIF (they are converted to JPEG automatically).");
       need(media.every((m) => m.kind !== "Carousel"), "Carousel posts are not supported yet.");
       need(text.length <= 2200, "Instagram captions are limited to 2,200 characters.");
       need(publicBaseIsReachable(), "Instagram must download the media from a public HTTPS address. Set PUBLIC_BASE_URL on the server to a reachable URL (not localhost).");

@@ -8,7 +8,9 @@ import { getJwtSecret } from "../../config/env.js";
 const TTL_SECONDS = 2 * 60 * 60;
 
 const key = () => crypto.createHash("sha256").update(`media-url:${getJwtSecret()}`).digest();
-const sign = (id: string, exp: number) => crypto.createHmac("sha256", key()).update(`${id}.${exp}`).digest("base64url");
+// A variant (e.g. the Instagram JPEG) is part of what is signed, so a link for one cannot fetch the other.
+const sign = (id: string, exp: number, variant = "") =>
+  crypto.createHmac("sha256", key()).update(variant ? `${id}.${exp}.${variant}` : `${id}.${exp}`).digest("base64url");
 
 export const publicBaseUrl = () => (process.env["PUBLIC_BASE_URL"] ?? "").trim().replace(/\/+$/, "");
 
@@ -19,15 +21,16 @@ export function publicBaseIsReachable(): boolean {
   return !/^https:\/\/(localhost|127\.|0\.0\.0\.0|\[::1\])/i.test(base);
 }
 
-export function signedMediaUrl(mediaId: string): string {
+export function signedMediaUrl(mediaId: string, variant = ""): string {
   const exp = Math.floor(Date.now() / 1000) + TTL_SECONDS;
-  return `${publicBaseUrl()}/api/public/media/${mediaId}?exp=${exp}&sig=${sign(mediaId, exp)}`;
+  const v = variant ? `&v=${variant}` : "";
+  return `${publicBaseUrl()}/api/public/media/${mediaId}?exp=${exp}${v}&sig=${sign(mediaId, exp, variant)}`;
 }
 
-export function verifyMediaSignature(mediaId: string, exp: string, sig: string): boolean {
+export function verifyMediaSignature(mediaId: string, exp: string, sig: string, variant = ""): boolean {
   const e = Number(exp);
   if (!Number.isFinite(e) || e < Math.floor(Date.now() / 1000)) return false;
-  const expected = Buffer.from(sign(mediaId, e));
+  const expected = Buffer.from(sign(mediaId, e, variant));
   const given = Buffer.from(sig);
   return expected.length === given.length && crypto.timingSafeEqual(expected, given);
 }

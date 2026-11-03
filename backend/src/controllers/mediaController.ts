@@ -9,6 +9,7 @@ import {
   uploadDir,
 } from "../middleware/upload.js";
 import Content from "../models/Content.js";
+import { removeInstagramVariant } from "../services/publishing/instagramImage.js";
 import Media, { MEDIA_KINDS, PLATFORMS } from "../models/Media.js";
 import { audit } from "../utils/audit.js";
 import { resolveBrand } from "../utils/brands.js";
@@ -217,6 +218,7 @@ export async function deleteMedia(req: Request, res: Response) {
   }
   await media.deleteOne();
   removeFile(media.filename);
+  await removeInstagramVariant(media.filename);
   await audit(req, { action: "Deleted media", category: "Media", resource: media.title, resourceId: String(media._id) });
   res.json({ success: true });
 }
